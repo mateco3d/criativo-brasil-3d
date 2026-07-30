@@ -149,8 +149,7 @@
   document.getElementById('pdFullDesc').textContent = p.desc;
 
   const specs = [
-    ['Material', p.material], ['Tempo de Produção', p.producao], ['Peso', p.peso],
-    ['Dimensões', p.dim], ['Cor', p.cor], ['SKU', p.sku],
+    ['Material', p.material], ['Cor', p.cor], ['SKU', p.sku],
   ];
   document.getElementById('pdSpecs').innerHTML = specs.map(([k,v])=>`<div class="pd-spec"><b>${k}</b><span>${v}</span></div>`).join('');
   document.getElementById('pdStock').innerHTML = p.stock > 0 ? `${ICO.check} ${p.stock} unidades em estoque` : 'Sob encomenda';

@@ -51,19 +51,11 @@
         </div>
 
         <div class="admin-panel kv-form">
-          <h3>Especificações Físicas</h3>
+          <h3>Especificações</h3>
           <div class="form-row cols-3">
-            <div class="form-group"><label>Peso (g)</label><input type="text" id="f_peso" value="${e.peso||''}"></div>
             <div class="form-group"><label>Material</label><input type="text" id="f_material" value="${e.material||''}"></div>
             <div class="form-group"><label>Cor</label><input type="text" id="f_cor" value="${e.cor||''}"></div>
           </div>
-          <div class="form-row cols-3">
-            <div class="form-group"><label>Altura (cm)</label><input type="text" id="f_altura"></div>
-            <div class="form-group"><label>Largura (cm)</label><input type="text" id="f_largura"></div>
-            <div class="form-group"><label>Comprimento (cm)</label><input type="text" id="f_comprimento"></div>
-          </div>
-          <div class="form-group"><label>Dimensões (resumo)</label><input type="text" id="f_dim" value="${e.dim||''}" placeholder="ex: 18x12x22cm"></div>
-          <div class="form-group"><label>Tempo de Produção</label><input type="text" id="f_producao" value="${e.producao||''}" placeholder="ex: 2 a 4 dias úteis"></div>
         </div>
 
         <div class="admin-panel kv-form">
@@ -113,9 +105,8 @@
       price: parseFloat(document.getElementById('f_price').value)||0,
       promo: parseFloat(document.getElementById('f_promo').value)||null,
       stock: parseInt(document.getElementById('f_stock').value)||0,
-      peso: document.getElementById('f_peso').value, material: document.getElementById('f_material').value,
-      cor: document.getElementById('f_cor').value, dim: document.getElementById('f_dim').value,
-      producao: document.getElementById('f_producao').value, tags,
+      material: document.getElementById('f_material').value,
+      cor: document.getElementById('f_cor').value, tags,
       rating: e.rating || 5, reviews: e.reviews || 0,
     };
     AdminStore.upsertProduct(product);

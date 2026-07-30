@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Painel Admin | Criativo Brasil 3D</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/admin.js"></script>
+<script>
+  adminLayout('index.html', 'Dashboard', 'Visão geral do desempenho da loja');
+  const c = document.getElementById('adminContent');
+
+  const stats = [
+    { ic:'money', label:'Faturamento (mês)', val: formatBRL(48250.90), delta:'+18%', up:true },
+    { ic:'cart', label:'Pedidos (mês)', val: '312', delta:'+9%', up:true },
+    { ic:'bag', label:'Ticket Médio', val: formatBRL(154.65), delta:'+4%', up:true },
+    { ic:'users', label:'Novos Clientes', val: '87', delta:'-3%', up:false },
+  ];
+
+  const salesByMonth = [
+    { label:'Fev', value: 28400 },{ label:'Mar', value: 31200 },{ label:'Abr', value: 26900 },
+    { label:'Mai', value: 39800 },{ label:'Jun', value: 42500 },{ label:'Jul', value: 48250 },
+  ];
+
+  const catSplit = [
+    { label:'Geek', value: 24, color:'#FFC107' },{ label:'Funko', value: 20, color:'#121212' },
+    { label:'Organização', value: 16, color:'#7a7a7a' },{ label:'Casa', value: 14, color:'#e0a600' },
+    { label:'Outros', value: 26, color:'#dcdcdc' },
+  ];
+
+  const bestSellers = PRODUCTS.slice().sort((a,b)=>b.reviews-a.reviews).slice(0,5);
+
+  const recentOrders = [
+    { id:'CB3D-482910', cliente:'Camila Souza', total:219.80, status:'entregue', date:'22/07' },
+    { id:'CB3D-482905', cliente:'Rafael Lima', total:89.90, status:'enviado', date:'22/07' },
+    { id:'CB3D-482899', cliente:'Juliana Prado', total:349.70, status:'processando', date:'21/07' },
+    { id:'CB3D-482874', cliente:'Diego Martins', total:129.90, status:'processando', date:'21/07' },
+    { id:'CB3D-482850', cliente:'Fernanda Alves', total:59.90, status:'entregue', date:'20/07' },
+  ];
+  const stMap = { entregue:'pill-green', enviado:'pill-blue', processando:'pill-gold', cancelado:'pill-red' };
+
+  c.innerHTML = `
+    <div class="stat-grid">
+      ${stats.map(s => `
+        <div class="stat-card">
+          <div class="stat-top"><div class="stat-ic">${AICO[s.ic]}</div><span class="stat-delta ${s.up?'up':'down'}">${s.delta}</span></div>
+          <div class="stat-val">${s.val}</div>
+          <div class="stat-label">${s.label}</div>
+        </div>`).join('')}
+    </div>
+
+    <div class="admin-grid-2">
+      <div class="admin-panel">
+        <h3>Faturamento por Período (últimos 6 meses)</h3>
+        ${barChart(salesByMonth, { fmt: v => 'R$ '+(v/1000).toFixed(1)+'k' })}
+      </div>
+      <div class="admin-panel">
+        <h3>Vendas por Categoria</h3>
+        ${donutChart(catSplit)}
+      </div>
+    </div>
+
+    <div class="admin-grid-2">
+      <div class="admin-panel">
+        <h3>Pedidos Recentes</h3>
+        <table class="admin-table">
+          <thead><tr><th>Pedido</th><th>Cliente</th><th>Data</th><th>Status</th><th>Total</th></tr></thead>
+          <tbody>
+            ${recentOrders.map(o => `<tr><td><strong>${o.id}</strong></td><td>${o.cliente}</td><td>${o.date}</td><td><span class="pill ${stMap[o.status]}">${o.status}</span></td><td>${formatBRL(o.total)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+        <a href="pedidos.html" class="btn btn-ghost btn-sm" style="margin-top:14px">Ver Todos os Pedidos</a>
+      </div>
+      <div class="admin-panel">
+        <h3>Produtos Mais Vendidos</h3>
+        ${bestSellers.map(p => `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f2f2f2">
+            <div class="admin-thumb">${iconFor(p.cat)}</div>
+            <div style="flex:1"><div style="font-size:13px;font-weight:600">${p.name}</div><div style="font-size:11.5px;color:#999">${p.reviews} vendas</div></div>
+            <strong style="font-size:13px">${formatBRL(p.promo||p.price)}</strong>
+          </div>`).join('')}
+      </div>
+    </div>
+  `;
+</script>
+</body>
+</html>

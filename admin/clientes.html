@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clientes — Painel Admin | Criativo Brasil 3D</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/admin.js"></script>
+<script>
+  adminLayout('clientes.html', 'Clientes', 'Base de clientes cadastrados na loja');
+  const c = document.getElementById('adminContent');
+  AdminStore.seed();
+
+  function render(q){
+    const customers = AdminStore.get('customers').filter(cu => !q || cu.name.toLowerCase().includes(q.toLowerCase()) || cu.email.toLowerCase().includes(q.toLowerCase()));
+    document.getElementById('custTbody').innerHTML = customers.map(cu => `
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:10px"><div class="review-avatar" style="width:34px;height:34px;font-size:11px">${cu.name.split(' ').map(n=>n[0]).slice(0,2).join('')}</div><strong>${cu.name}</strong></div></td>
+        <td>${cu.email}</td>
+        <td>${cu.orders} pedidos</td>
+        <td>${formatBRL(cu.total)}</td>
+        <td>${new Date(cu.since).toLocaleDateString('pt-BR')}</td>
+        <td><div class="row-actions"><button title="Ver perfil" onclick="alert('Perfil de ${cu.name}\\nE-mail: ${cu.email}\\nTotal gasto: ${formatBRL(cu.total)}')">${AICO.eye}</button></div></td>
+      </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:#999;padding:30px">Nenhum cliente encontrado.</td></tr>`;
+  }
+
+  c.innerHTML = `
+    <div class="admin-panel">
+      <div class="admin-toolbar">
+        <div class="admin-search">${AICO.search}<input type="text" id="searchCust" placeholder="Buscar cliente..."></div>
+      </div>
+      <table class="admin-table">
+        <thead><tr><th>Cliente</th><th>E-mail</th><th>Pedidos</th><th>Total Gasto</th><th>Cliente desde</th><th>Ações</th></tr></thead>
+        <tbody id="custTbody"></tbody>
+      </table>
+    </div>`;
+  document.getElementById('searchCust').addEventListener('input', e => render(e.target.value));
+  render('');
+</script>
+</body>
+</html>

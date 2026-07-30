@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carrinho — Criativo Brasil 3D</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23121212%22/><text x=%2250%22 y=%2266%22 font-size=%2244%22 fill=%22%23FFC107%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-weight=%22bold%22>CB</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .cart-wrap { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: flex-start; }
+  .cart-line { display: grid; grid-template-columns: 90px 1fr auto auto auto; gap: 18px; align-items: center; padding: 20px 0; border-bottom: 1px solid #eee; }
+  .cart-line .icon-wrap { width: 90px; height: 90px; border-radius: 12px; background: linear-gradient(145deg,#f4f4f4,#e9e9e9); display:flex; align-items:center; justify-content:center; }
+  .cart-line .icon-wrap svg { width: 46%; height: 46%; color: var(--black); }
+  .cl-name { font-weight: 600; font-size: 14.5px; margin-bottom: 4px; }
+  .cl-cat { font-size: 12px; color: var(--gray-500); }
+  .cl-price { font-weight: 700; }
+  .cl-remove { color: var(--red); font-size: 12.5px; margin-top: 6px; display: inline-block; }
+  .coupon-row { display: flex; gap: 10px; margin: 20px 0; }
+  .coupon-row input { flex: 1; padding: 12px 16px; border-radius: 10px; border: 1.5px solid #e2e2e2; }
+  .summary-row { display: flex; justify-content: space-between; font-size: 14px; padding: 10px 0; }
+  .summary-row.total { font-size: 18px; font-weight: 800; border-top: 1px solid #eee; margin-top: 8px; padding-top: 16px; }
+  .empty-cart { text-align: center; padding: 80px 0; }
+  @media (max-width: 860px){ .cart-wrap { grid-template-columns: 1fr; } .cart-line { grid-template-columns: 60px 1fr; row-gap: 10px; } .cart-line .icon-wrap { width:60px;height:60px; } .cart-line > *:nth-child(3), .cart-line > *:nth-child(4) { grid-column: 2; } }
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<div class="page-hero"><div class="container"><h1>Seu Carrinho</h1><p>Revise seus itens antes de finalizar a compra</p></div></div>
+<div class="container"><div class="breadcrumb"><a href="index.html">Início</a><span class="sep">/</span><span>Carrinho</span></div></div>
+
+<section class="section" style="padding-top:12px">
+  <div class="container">
+    <div id="cartContent"></div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/main.js"></script>
+<script>
+  mountLayout(null);
+  let coupon = null;
+  const COUPONS = { 'BEMVINDO10': .10, 'CB3D15': .15 };
+
+  function render(){
+    const lines = Cart.lines();
+    const el = document.getElementById('cartContent');
+    if (!lines.length){
+      el.innerHTML = `<div class="empty-cart"><h3>Seu carrinho está vazio</h3><p style="color:#999;margin:14px 0 26px">Que tal explorar nossos produtos?</p><a href="produtos.html" class="btn btn-gold">Ver Produtos</a></div>`;
+      return;
+    }
+    const subtotal = Cart.subtotal();
+    const discount = coupon ? subtotal * coupon : 0;
+    el.innerHTML = `
+      <div class="cart-wrap">
+        <div>
+          ${lines.map(l => `
+            <div class="cart-line">
+              <div class="icon-wrap">${iconFor(l.product.cat)}</div>
+              <div>
+                <div class="cl-name">${l.product.name}</div>
+                <div class="cl-cat">${(CATEGORIES.find(c=>c.slug===l.product.cat)||{}).name}</div>
+                <a class="cl-remove" onclick="Cart.remove('${l.id}'); render();">Remover</a>
+              </div>
+              <div class="qty-box">
+                <button onclick="Cart.setQty('${l.id}', ${l.qty-1}); render();">−</button>
+                <span>${l.qty}</span>
+                <button onclick="Cart.setQty('${l.id}', ${l.qty+1}); render();">+</button>
+              </div>
+              <div class="cl-price">${formatBRL(l.subtotal)}</div>
+              <div></div>
+            </div>`).join('')}
+          <div class="coupon-row">
+            <input type="text" id="couponInput" placeholder="Cupom de desconto (ex: BEMVINDO10)">
+            <button class="btn btn-black" onclick="applyCoupon()">Aplicar</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="margin-bottom:16px">Resumo do Pedido</h3>
+          <div class="summary-row"><span>Subtotal</span><span>${formatBRL(subtotal)}</span></div>
+          ${coupon ? `<div class="summary-row" style="color:var(--green)"><span>Cupom aplicado (-${coupon*100}%)</span><span>-${formatBRL(discount)}</span></div>` : ''}
+          <div class="summary-row"><span>Frete</span><span style="color:var(--gray-500)">Calculado no checkout</span></div>
+          <div class="summary-row total"><span>Total</span><span>${formatBRL(subtotal - discount)}</span></div>
+          <a href="checkout.html" class="btn btn-gold btn-block" style="margin-top:14px">Finalizar Compra</a>
+          <a href="produtos.html" class="btn btn-ghost btn-block" style="margin-top:10px">Continuar Comprando</a>
+        </div>
+      </div>`;
+  }
+  function applyCoupon(){
+    const code = document.getElementById('couponInput').value.trim().toUpperCase();
+    if (COUPONS[code]) { coupon = COUPONS[code]; showToast('Cupom aplicado!', `Desconto de ${COUPONS[code]*100}% ativado.`); }
+    else { showToast('Cupom inválido', 'Verifique o código digitado.'); }
+    render();
+  }
+  render();
+  document.addEventListener('cart:update', render);
+</script>
+</body>
+</html>

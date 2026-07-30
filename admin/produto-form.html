@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastro de Produto — Painel Admin | Criativo Brasil 3D</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/admin.js"></script>
+<script>
+  const editId = new URLSearchParams(location.search).get('id');
+  adminLayout('produtos.html', editId ? 'Editar Produto' : 'Novo Produto', 'Preencha as informações completas do produto');
+  const c = document.getElementById('adminContent');
+  AdminStore.seed();
+  const existing = editId ? AdminStore.get('products').find(p=>p.id===editId) : null;
+  const e = existing || { id:'p'+Date.now(), tags:[] };
+
+  c.innerHTML = `
+    <form class="admin-grid-2" id="prodForm">
+      <div>
+        <div class="admin-panel kv-form">
+          <h3>Informações Básicas</h3>
+          <div class="form-row cols-2">
+            <div class="form-group"><label>Nome do Produto</label><input type="text" id="f_name" value="${e.name||''}" required></div>
+            <div class="form-group"><label>Slug (URL)</label><input type="text" id="f_slug" value="${e.slug||''}" required></div>
+          </div>
+          <div class="form-row cols-2">
+            <div class="form-group"><label>Categoria</label>
+              <select id="f_cat">${CATEGORIES.map(cc=>`<option value="${cc.slug}" ${e.cat===cc.slug?'selected':''}>${cc.name}</option>`).join('')}</select>
+            </div>
+            <div class="form-group"><label>SKU</label><input type="text" id="f_sku" value="${e.sku||''}"></div>
+          </div>
+          <div class="form-group"><label>Descrição Curta</label><input type="text" id="f_short" value="${e.short||''}"></div>
+          <div class="form-group"><label>Descrição Completa</label><textarea id="f_desc" rows="5">${e.desc||''}</textarea></div>
+        </div>
+
+        <div class="admin-panel kv-form">
+          <h3>Preço e Estoque</h3>
+          <div class="form-row cols-3">
+            <div class="form-group"><label>Preço (R$)</label><input type="number" step="0.01" id="f_price" value="${e.price||''}" required></div>
+            <div class="form-group"><label>Preço Promocional (R$)</label><input type="number" step="0.01" id="f_promo" value="${e.promo||''}"></div>
+            <div class="form-group"><label>Estoque</label><input type="number" id="f_stock" value="${e.stock??''}" required></div>
+          </div>
+        </div>
+
+        <div class="admin-panel kv-form">
+          <h3>Especificações Físicas</h3>
+          <div class="form-row cols-3">
+            <div class="form-group"><label>Peso (g)</label><input type="text" id="f_peso" value="${e.peso||''}"></div>
+            <div class="form-group"><label>Material</label><input type="text" id="f_material" value="${e.material||''}"></div>
+            <div class="form-group"><label>Cor</label><input type="text" id="f_cor" value="${e.cor||''}"></div>
+          </div>
+          <div class="form-row cols-3">
+            <div class="form-group"><label>Altura (cm)</label><input type="text" id="f_altura"></div>
+            <div class="form-group"><label>Largura (cm)</label><input type="text" id="f_largura"></div>
+            <div class="form-group"><label>Comprimento (cm)</label><input type="text" id="f_comprimento"></div>
+          </div>
+          <div class="form-group"><label>Dimensões (resumo)</label><input type="text" id="f_dim" value="${e.dim||''}" placeholder="ex: 18x12x22cm"></div>
+          <div class="form-group"><label>Tempo de Produção</label><input type="text" id="f_producao" value="${e.producao||''}" placeholder="ex: 2 a 4 dias úteis"></div>
+        </div>
+
+        <div class="admin-panel kv-form">
+          <h3>Imagens e Vídeos</h3>
+          <div class="upload-box">📷 Arraste imagens aqui ou clique para enviar (ilimitado) — integração Cloudinary</div>
+          <div class="upload-box" style="margin-top:12px">🎬 Adicionar vídeo do produto (URL ou upload)</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="admin-panel kv-form">
+          <h3>Tags</h3>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="tag_novo" ${(e.tags||[]).includes('novo')?'checked':''}> Novo</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="tag_promocao" ${(e.tags||[]).includes('promocao')?'checked':''}> Promoção</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="tag_maisvendido" ${(e.tags||[]).includes('mais-vendido')?'checked':''}> Mais Vendido</label>
+          </div>
+        </div>
+
+        <div class="admin-panel kv-form">
+          <h3>SEO</h3>
+          <div class="form-group"><label>Meta Título</label><input type="text" id="f_seotitle" placeholder="${e.name||'Nome do produto'} | Criativo Brasil 3D"></div>
+          <div class="form-group"><label>Meta Descrição</label><textarea id="f_seodesc" rows="3" placeholder="${e.short||''}"></textarea></div>
+        </div>
+
+        <div class="admin-panel">
+          <h3>Publicação</h3>
+          <div class="form-group"><label>Status</label>
+            <select id="f_status"><option>Publicado</option><option>Rascunho</option><option>Arquivado</option></select>
+          </div>
+          <button type="submit" class="btn btn-gold btn-block">Salvar Produto</button>
+          <a href="produtos.html" class="btn btn-ghost btn-block" style="margin-top:10px">Cancelar</a>
+        </div>
+      </div>
+    </form>`;
+
+  document.getElementById('prodForm').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    const tags = [];
+    if (document.getElementById('tag_novo').checked) tags.push('novo');
+    if (document.getElementById('tag_promocao').checked) tags.push('promocao');
+    if (document.getElementById('tag_maisvendido').checked) tags.push('mais-vendido');
+    const product = {
+      id: e.id, slug: document.getElementById('f_slug').value, name: document.getElementById('f_name').value,
+      cat: document.getElementById('f_cat').value, sku: document.getElementById('f_sku').value,
+      short: document.getElementById('f_short').value, desc: document.getElementById('f_desc').value,
+      price: parseFloat(document.getElementById('f_price').value)||0,
+      promo: parseFloat(document.getElementById('f_promo').value)||null,
+      stock: parseInt(document.getElementById('f_stock').value)||0,
+      peso: document.getElementById('f_peso').value, material: document.getElementById('f_material').value,
+      cor: document.getElementById('f_cor').value, dim: document.getElementById('f_dim').value,
+      producao: document.getElementById('f_producao').value, tags,
+      rating: e.rating || 5, reviews: e.reviews || 0,
+    };
+    AdminStore.upsertProduct(product);
+    alert('Produto salvo com sucesso!');
+    location.href = 'produtos.html';
+  });
+</script>
+</body>
+</html>

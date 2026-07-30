@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cupons e Promoções — Painel Admin | Criativo Brasil 3D</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/admin.js"></script>
+<script>
+  adminLayout('cupons.html', 'Cupons e Promoções', 'Crie campanhas de desconto para impulsionar as vendas');
+  const c = document.getElementById('adminContent');
+  AdminStore.seed();
+
+  function render(){
+    const coupons = AdminStore.get('coupons');
+    document.getElementById('couponTbody').innerHTML = coupons.map((cp,i) => `
+      <tr>
+        <td><strong>${cp.code}</strong></td>
+        <td>${cp.type==='percent' ? cp.value+'% de desconto' : 'Frete Grátis'}</td>
+        <td>${cp.uses} / ${cp.limit}</td>
+        <td>${new Date(cp.expires).toLocaleDateString('pt-BR')}</td>
+        <td><span class="pill ${cp.active?'pill-green':'pill-gray'}">${cp.active?'Ativo':'Inativo'}</span></td>
+        <td><div class="row-actions"><button title="Ativar/Desativar" onclick="toggleCoupon(${i})">${AICO.edit}</button><button title="Excluir" onclick="delCoupon(${i})">${AICO.trash}</button></div></td>
+      </tr>`).join('');
+  }
+  function toggleCoupon(i){ const cps = AdminStore.get('coupons'); cps[i].active = !cps[i].active; AdminStore.set('coupons', cps); render(); }
+  function delCoupon(i){ if(!confirm('Excluir cupom?')) return; const cps = AdminStore.get('coupons'); cps.splice(i,1); AdminStore.set('coupons', cps); render(); }
+
+  c.innerHTML = `
+    <div class="admin-grid-2">
+      <div class="admin-panel">
+        <h3>Cupons Ativos</h3>
+        <table class="admin-table">
+          <thead><tr><th>Código</th><th>Desconto</th><th>Usos</th><th>Expira</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="couponTbody"></tbody>
+        </table>
+      </div>
+      <div class="admin-panel kv-form">
+        <h3>Criar Novo Cupom</h3>
+        <form id="cpForm">
+          <div class="form-group"><label>Código do Cupom</label><input type="text" id="cp_code" placeholder="EX: PROMO20" required></div>
+          <div class="form-row cols-2">
+            <div class="form-group"><label>Tipo</label>
+              <select id="cp_type"><option value="percent">% Desconto</option><option value="fixed">Valor Fixo (R$)</option><option value="shipping">Frete Grátis</option></select>
+            </div>
+            <div class="form-group"><label>Valor</label><input type="number" id="cp_value" value="10"></div>
+          </div>
+          <div class="form-row cols-2">
+            <div class="form-group"><label>Limite de Usos</label><input type="number" id="cp_limit" value="100"></div>
+            <div class="form-group"><label>Validade</label><input type="date" id="cp_expires"></div>
+          </div>
+          <button class="btn btn-gold btn-block" type="submit">Criar Cupom</button>
+        </form>
+      </div>
+    </div>`;
+
+  document.getElementById('cpForm').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    const cps = AdminStore.get('coupons');
+    cps.push({ code: document.getElementById('cp_code').value.toUpperCase(), type: document.getElementById('cp_type').value, value: +document.getElementById('cp_value').value, active:true, uses:0, limit: +document.getElementById('cp_limit').value, expires: document.getElementById('cp_expires').value || '2026-12-31' });
+    AdminStore.set('coupons', cps); render(); this.reset();
+  });
+  render();
+</script>
+</body>
+</html>

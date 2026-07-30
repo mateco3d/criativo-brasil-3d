@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contato — Criativo Brasil 3D</title>
+<meta name="description" content="Fale com a Criativo Brasil 3D via WhatsApp, e-mail ou formulário de contato.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23121212%22/><text x=%2250%22 y=%2266%22 font-size=%2244%22 fill=%22%23FFC107%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-weight=%22bold%22>CB</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="site-header"></div>
+<div class="page-hero"><div class="container"><h1>Fale Conosco</h1><p>Estamos prontos para ajudar você</p></div></div>
+
+<section class="section">
+  <div class="container grid-2">
+    <div class="card">
+      <h3 style="margin-bottom:18px">Envie uma Mensagem</h3>
+      <form onsubmit="event.preventDefault(); showToast('Mensagem enviada!','Responderemos em breve.'); this.reset();">
+        <div class="form-row cols-2">
+          <div class="form-group"><label>Nome</label><input type="text" required></div>
+          <div class="form-group"><label>E-mail</label><input type="email" required></div>
+        </div>
+        <div class="form-group"><label>Assunto</label><input type="text" required></div>
+        <div class="form-group"><label>Mensagem</label><textarea rows="5" required></textarea></div>
+        <button class="btn btn-gold" type="submit">Enviar Mensagem</button>
+      </form>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <h4 style="margin-bottom:14px">Informações de Contato</h4>
+        <ul class="footer-contact" style="color:var(--black)">
+          <li style="color:var(--black)"><span style="color:var(--gold-dark)">${''}</span></li>
+        </ul>
+        <div id="contactInfo"></div>
+      </div>
+      <a href="https://wa.me/5511912345678" target="_blank" class="btn btn-black btn-block" style="margin-bottom:12px">Chamar no WhatsApp</a>
+      <div class="card" style="background:var(--black);color:#fff">
+        <h4 style="color:var(--gold);margin-bottom:10px">Horário de Atendimento</h4>
+        <p style="font-size:13.5px;color:var(--gray-300)">Segunda a Sexta: 9h às 18h<br>Sábado: 9h às 13h</p>
+      </div>
+    </div>
+  </div>
+</section>
+<div id="site-footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/main.js"></script>
+<script>
+  mountLayout(null);
+  document.getElementById('contactInfo').innerHTML = `
+    <div style="display:flex;gap:10px;margin-bottom:14px;font-size:13.5px"><span style="color:var(--gold-dark)">${ICO.pin}</span> São Paulo, SP — Envios para todo o Brasil</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;font-size:13.5px"><span style="color:var(--gold-dark)">${ICO.phone}</span> (11) 91234-5678</div>
+    <div style="display:flex;gap:10px;font-size:13.5px"><span style="color:var(--gold-dark)">${ICO.mail}</span> contato@criativobrasil3d.com.br</div>`;
+</script>
+</body>
+</html>

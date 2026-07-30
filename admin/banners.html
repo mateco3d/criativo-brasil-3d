@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banners — Painel Admin | Criativo Brasil 3D</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/admin.css">
+<style>.banner-row{display:grid;grid-template-columns:120px 1fr auto auto;gap:16px;align-items:center;padding:16px;border:1px solid #eee;border-radius:12px;margin-bottom:12px}
+.banner-prev{height:70px;border-radius:8px;background:linear-gradient(120deg,#1a1a1a,#3a2f00);display:flex;align-items:center;justify-content:center;color:#FFC107;font-size:11px;font-weight:700}
+</style>
+</head>
+<body>
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/admin.js"></script>
+<script>
+  adminLayout('banners.html', 'Banners', 'Gerencie os banners do carrossel da página inicial');
+  const c = document.getElementById('adminContent');
+  AdminStore.seed();
+
+  function render(){
+    const banners = AdminStore.get('banners');
+    document.getElementById('bannerList').innerHTML = banners.map((b,i) => `
+      <div class="banner-row">
+        <div class="banner-prev">${b.tag}</div>
+        <div><strong>${b.title}</strong><div style="font-size:12px;color:#999">${b.text}</div></div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" ${b.active?'checked':''} onchange="toggleBanner(${i})"> Ativo</label>
+        <div class="row-actions"><button title="Editar" onclick="editBanner(${i})">${AICO.edit}</button><button title="Excluir" onclick="delBanner(${i})">${AICO.trash}</button></div>
+      </div>`).join('');
+  }
+  function toggleBanner(i){ const b = AdminStore.get('banners'); b[i].active = !b[i].active; AdminStore.set('banners', b); render(); }
+  function delBanner(i){ if(!confirm('Excluir banner?')) return; const b = AdminStore.get('banners'); b.splice(i,1); AdminStore.set('banners', b); render(); }
+  function editBanner(i){ const b = AdminStore.get('banners'); const t = prompt('Título do banner:', b[i].title); if(t===null) return; b[i].title = t; AdminStore.set('banners', b); render(); }
+  function addBanner(){
+    const tag = prompt('Tag do banner (ex: Lançamentos):'); if(!tag) return;
+    const title = prompt('Título principal:') || 'Novo Banner';
+    const b = AdminStore.get('banners'); b.push({ id:'b'+Date.now(), tag, title, text:'Descrição do banner', cta:'Comprar Agora', link:'../produtos.html', active:true });
+    AdminStore.set('banners', b); render();
+  }
+
+  c.innerHTML = `
+    <div class="admin-panel">
+      <div class="admin-toolbar">
+        <h3 style="margin:0">Banners do Carrossel</h3>
+        <button class="btn btn-gold btn-sm" onclick="addBanner()">${AICO.plus} Novo Banner</button>
+      </div>
+      <div id="bannerList"></div>
+    </div>`;
+  render();
+</script>
+</body>
+</html>

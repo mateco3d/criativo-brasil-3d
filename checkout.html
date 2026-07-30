@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout — Criativo Brasil 3D</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23121212%22/><text x=%2250%22 y=%2266%22 font-size=%2244%22 fill=%22%23FFC107%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-weight=%22bold%22>CB</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .checkout-wrap { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: flex-start; }
+  .co-steps { display: flex; gap: 24px; margin-bottom: 30px; }
+  .co-step { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--gray-500); }
+  .co-step .num { width: 24px; height: 24px; border-radius: 50%; background: var(--gray-100); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .co-step.active { color: var(--black); }
+  .co-step.active .num { background: var(--gold); }
+  .shipping-opt { display: flex; align-items: center; justify-content: space-between; border: 1.5px solid #e2e2e2; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; }
+  .shipping-opt.selected { border-color: var(--gold); background: var(--gold-soft); }
+  .shipping-opt input { accent-color: var(--gold); width: 17px; height: 17px; }
+  .pay-tabs { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .pay-tab { flex: 1; min-width: 100px; text-align: center; padding: 14px 10px; border: 1.5px solid #e2e2e2; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; }
+  .pay-tab.selected { border-color: var(--gold); background: var(--gold-soft); }
+  .pay-panel { display: none; }
+  .pay-panel.active { display: block; }
+  .summary-mini-item { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; color: var(--gray-700); }
+  .summary-row { display: flex; justify-content: space-between; font-size: 14px; padding: 8px 0; }
+  .summary-row.total { font-size: 18px; font-weight: 800; border-top: 1px solid #eee; margin-top: 8px; padding-top: 14px; }
+  @media (max-width: 860px){ .checkout-wrap { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<div class="page-hero"><div class="container"><h1>Finalizar Compra</h1><p>Checkout rápido e seguro em uma única página</p></div></div>
+
+<section class="section" style="padding-top:30px">
+  <div class="container">
+    <div class="co-steps">
+      <div class="co-step active"><span class="num">1</span> Dados Pessoais</div>
+      <div class="co-step active"><span class="num">2</span> Endereço e Frete</div>
+      <div class="co-step active"><span class="num">3</span> Pagamento</div>
+    </div>
+    <form class="checkout-wrap" id="checkoutForm" onsubmit="finalizarCompra(event)">
+      <div>
+        <div class="card" style="margin-bottom:20px">
+          <h3 style="margin-bottom:18px">Dados Pessoais</h3>
+          <div class="form-row cols-2">
+            <div class="form-group"><label>Nome Completo</label><input type="text" required></div>
+            <div class="form-group"><label>CPF</label><input type="text" required placeholder="000.000.000-00"></div>
+          </div>
+          <div class="form-row cols-2">
+            <div class="form-group"><label>Telefone</label><input type="tel" required placeholder="(11) 91234-5678"></div>
+            <div class="form-group"><label>E-mail</label><input type="email" required></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <h3 style="margin-bottom:18px">Endereço de Entrega</h3>
+          <div class="form-row cols-3">
+            <div class="form-group"><label>CEP</label><input type="text" id="cepInput" required placeholder="00000-000" maxlength="9"></div>
+            <div class="form-group" style="grid-column:span 2"><label>Endereço</label><input type="text" id="ruaInput" required></div>
+          </div>
+          <div class="form-row cols-4">
+            <div class="form-group"><label>Número</label><input type="text" required></div>
+            <div class="form-group"><label>Complemento</label><input type="text"></div>
+            <div class="form-group"><label>Cidade</label><input type="text" id="cidadeInput" required></div>
+            <div class="form-group"><label>Estado</label><input type="text" id="ufInput" required maxlength="2"></div>
+          </div>
+          <p id="cepStatus" style="font-size:12.5px;color:var(--gray-500)"></p>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <h3 style="margin-bottom:14px">Forma de Envio</h3>
+          <div id="shippingOptions"><p style="color:var(--gray-500);font-size:13px">Informe o CEP para calcular o frete automaticamente.</p></div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-bottom:14px">Forma de Pagamento</h3>
+          <div class="pay-tabs">
+            <div class="pay-tab selected" data-pay="pix">Pix</div>
+            <div class="pay-tab" data-pay="cartao">Cartão de Crédito</div>
+            <div class="pay-tab" data-pay="boleto">Boleto</div>
+          </div>
+          <div class="pay-panel active" id="pay-pix">
+            <p style="font-size:13.5px;color:var(--gray-600);line-height:1.6">Ao confirmar, geramos um QR Code Pix (Mercado Pago / Stripe) com aprovação automática em poucos segundos.</p>
+          </div>
+          <div class="pay-panel" id="pay-cartao">
+            <div class="form-group"><label>Número do Cartão</label><input type="text" placeholder="0000 0000 0000 0000"></div>
+            <div class="form-row cols-3">
+              <div class="form-group"><label>Validade</label><input type="text" placeholder="MM/AA"></div>
+              <div class="form-group"><label>CVV</label><input type="text" placeholder="123"></div>
+              <div class="form-group"><label>Parcelas</label>
+                <select><option>1x sem juros</option><option>2x sem juros</option><option>3x sem juros</option></select>
+              </div>
+            </div>
+          </div>
+          <div class="pay-panel" id="pay-boleto">
+            <p style="font-size:13.5px;color:var(--gray-600);line-height:1.6">O boleto será gerado após a confirmação e enviado para o seu e-mail, com vencimento em 3 dias úteis.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="position:sticky;top:100px">
+        <h3 style="margin-bottom:14px">Resumo do Pedido</h3>
+        <div id="checkoutItems"></div>
+        <div class="divider"></div>
+        <div class="summary-row"><span>Subtotal</span><span id="coSubtotal">R$ 0,00</span></div>
+        <div class="summary-row"><span>Frete</span><span id="coFrete">A calcular</span></div>
+        <div class="summary-row total"><span>Total</span><span id="coTotal">R$ 0,00</span></div>
+        <button type="submit" class="btn btn-gold btn-block" style="margin-top:16px">Finalizar Compra</button>
+        <p style="font-size:11.5px;color:var(--gray-500);text-align:center;margin-top:12px">🔒 Ambiente seguro · Pagamento processado via Stripe / Mercado Pago</p>
+      </div>
+    </form>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/main.js"></script>
+<script>
+  mountLayout(null);
+  let selectedShipping = null;
+
+  function renderItems(){
+    const lines = Cart.lines();
+    document.getElementById('checkoutItems').innerHTML = lines.map(l => `
+      <div class="summary-mini-item"><span>${l.qty}x ${l.product.name}</span><span>${formatBRL(l.subtotal)}</span></div>`).join('') || '<p style="color:#999;font-size:13px">Carrinho vazio.</p>';
+    document.getElementById('coSubtotal').textContent = formatBRL(Cart.subtotal());
+    updateTotal();
+  }
+  function updateTotal(){
+    const sub = Cart.subtotal();
+    const frete = selectedShipping ? selectedShipping.price : 0;
+    document.getElementById('coTotal').textContent = formatBRL(sub + frete);
+  }
+  renderItems();
+
+  const cepInput = document.getElementById('cepInput');
+  cepInput.addEventListener('input', ()=>{
+    let v = cepInput.value.replace(/\D/g,'').slice(0,8);
+    if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5);
+    cepInput.value = v;
+  });
+  cepInput.addEventListener('blur', async ()=>{
+    const cep = cepInput.value.replace(/\D/g,'');
+    if (cep.length !== 8) return;
+    document.getElementById('cepStatus').textContent = 'Consultando CEP...';
+    const addr = await consultarCEP(cep);
+    if (addr){
+      document.getElementById('ruaInput').value = addr.logradouro;
+      document.getElementById('cidadeInput').value = addr.localidade;
+      document.getElementById('ufInput').value = addr.uf;
+      document.getElementById('cepStatus').textContent = `Endereço encontrado: ${addr.bairro}, ${addr.localidade}/${addr.uf}`;
+      document.getElementById('shippingOptions').innerHTML = '<p style="font-size:13px;color:var(--gray-500)">Calculando frete...</p>';
+      const options = await calcularFrete(cep, Cart.subtotal());
+      document.getElementById('shippingOptions').innerHTML = options.map((o,i) => `
+        <label class="shipping-opt ${i===0?'selected':''}" data-idx="${i}">
+          <div style="display:flex;align-items:center;gap:12px">
+            <input type="radio" name="shipping" ${i===0?'checked':''}>
+            <div><div style="font-weight:700;font-size:13.5px">${o.label}</div><div style="font-size:12px;color:var(--gray-500)">Entrega em até ${o.days} dias úteis</div></div>
+          </div>
+          <strong>${o.price === 0 ? 'Grátis' : formatBRL(o.price)}</strong>
+        </label>`).join('');
+      selectedShipping = options[0];
+      document.getElementById('coFrete').textContent = selectedShipping.price === 0 ? 'Grátis' : formatBRL(selectedShipping.price);
+      updateTotal();
+      document.querySelectorAll('.shipping-opt').forEach((el,i)=>{
+        el.addEventListener('click', ()=>{
+          document.querySelectorAll('.shipping-opt').forEach(x=>x.classList.remove('selected'));
+          el.classList.add('selected');
+          el.querySelector('input').checked = true;
+          selectedShipping = options[i];
+          document.getElementById('coFrete').textContent = selectedShipping.price === 0 ? 'Grátis' : formatBRL(selectedShipping.price);
+          updateTotal();
+        });
+      });
+    } else {
+      document.getElementById('cepStatus').textContent = 'CEP não encontrado. Verifique o número digitado.';
+    }
+  });
+
+  document.querySelectorAll('.pay-tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.pay-tab').forEach(t=>t.classList.remove('selected'));
+      document.querySelectorAll('.pay-panel').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('selected');
+      document.getElementById('pay-'+tab.dataset.pay).classList.add('active');
+    });
+  });
+
+  function finalizarCompra(e){
+    e.preventDefault();
+    if (!Cart.lines().length){ showToast('Carrinho vazio','Adicione produtos antes de finalizar.'); return; }
+    if (!selectedShipping){ showToast('Selecione o frete','Informe o CEP para calcular o envio.'); return; }
+    const orderId = 'CB3D-' + Math.floor(100000 + Math.random()*900000);
+    localStorage.setItem('cb3d_last_order', JSON.stringify({ id: orderId, total: Cart.subtotal()+selectedShipping.price, date: new Date().toISOString() }));
+    Cart.clear();
+    location.href = 'pedido-confirmado.html?id=' + orderId;
+  }
+  document.addEventListener('cart:update', renderItems);
+</script>
+</body>
+</html>

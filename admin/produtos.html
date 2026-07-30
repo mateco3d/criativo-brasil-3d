@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Produtos — Painel Admin | Criativo Brasil 3D</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/admin.js"></script>
+<script>
+  adminLayout('produtos.html', 'Produtos', 'Cadastre, edite e gerencie o estoque dos produtos');
+  const c = document.getElementById('adminContent');
+  AdminStore.seed();
+
+  function renderTable(filterQ){
+    const list = AdminStore.get('products').filter(p => !filterQ || p.name.toLowerCase().includes(filterQ.toLowerCase()));
+    document.getElementById('prodTbody').innerHTML = list.map(p => `
+      <tr>
+        <td><div class="admin-thumb">${iconFor(p.cat)}</div></td>
+        <td><strong>${p.name}</strong><div style="font-size:11px;color:#999">${p.sku}</div></td>
+        <td>${(CATEGORIES.find(cc=>cc.slug===p.cat)||{}).name || p.cat}</td>
+        <td>${p.promo ? `<span style="text-decoration:line-through;color:#999;font-size:12px">${formatBRL(p.price)}</span> ${formatBRL(p.promo)}` : formatBRL(p.price)}</td>
+        <td>${p.stock > 10 ? `<span class="pill pill-green">${p.stock} un.</span>` : p.stock > 0 ? `<span class="pill pill-gold">${p.stock} un.</span>` : `<span class="pill pill-red">Esgotado</span>`}</td>
+        <td>${(p.tags||[]).map(t=>`<span class="pill pill-gray" style="margin-right:4px">${t}</span>`).join('') || '—'}</td>
+        <td>
+          <div class="row-actions">
+            <a href="produto-form.html?id=${p.id}" title="Editar">${AICO.edit}</a>
+            <a href="../produto.html?slug=${p.slug}" target="_blank" title="Visualizar">${AICO.eye}</a>
+            <button title="Excluir" onclick="delProduct('${p.id}')">${AICO.trash}</button>
+          </div>
+        </td>
+      </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:#999;padding:30px">Nenhum produto encontrado.</td></tr>`;
+    document.getElementById('prodCount').textContent = list.length + ' produtos';
+  }
+  function delProduct(id){
+    if (confirm('Tem certeza que deseja excluir este produto?')) { AdminStore.deleteProduct(id); renderTable(document.getElementById('searchProd').value); showToastAdmin('Produto excluído'); }
+  }
+  function showToastAdmin(msg){ alert(msg); }
+
+  c.innerHTML = `
+    <div class="admin-panel">
+      <div class="admin-toolbar">
+        <div class="admin-search">${AICO.search}<input type="text" id="searchProd" placeholder="Buscar produto..."></div>
+        <a href="produto-form.html" class="btn btn-gold btn-sm">${AICO.plus} Novo Produto</a>
+      </div>
+      <p style="font-size:12.5px;color:#999;margin-bottom:14px" id="prodCount"></p>
+      <div style="overflow-x:auto">
+        <table class="admin-table">
+          <thead><tr><th></th><th>Produto</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Tags</th><th>Ações</th></tr></thead>
+          <tbody id="prodTbody"></tbody>
+        </table>
+      </div>
+    </div>`;
+  document.getElementById('searchProd').addEventListener('input', e => renderTable(e.target.value));
+  renderTable('');
+</script>
+</body>
+</html>

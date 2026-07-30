@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perguntas Frequentes — Criativo Brasil 3D</title>
+<meta name="description" content="Tire suas dúvidas sobre prazos, materiais, frete e pagamento na Criativo Brasil 3D.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23121212%22/><text x=%2250%22 y=%2266%22 font-size=%2244%22 fill=%22%23FFC107%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-weight=%22bold%22>CB</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .faq-item { border-bottom: 1px solid #eee; padding: 20px 0; cursor: pointer; }
+  .faq-q { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 15px; }
+  .faq-a { max-height: 0; overflow: hidden; transition: max-height .3s var(--ease); font-size: 14px; color: var(--gray-600); line-height: 1.7; }
+  .faq-item.open .faq-a { max-height: 300px; padding-top: 12px; }
+  .faq-item.open .faq-icon { transform: rotate(45deg); }
+  .faq-icon { transition: transform .25s; font-size: 20px; color: var(--gold-dark); }
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<div class="page-hero"><div class="container"><h1>Perguntas Frequentes</h1><p>Tudo que você precisa saber antes de comprar</p></div></div>
+<section class="section">
+  <div class="container" style="max-width:780px">
+    <div id="faqList"></div>
+  </div>
+</section>
+<div id="site-footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/main.js"></script>
+<script>
+  mountLayout(null);
+  const FAQS = [
+    { q:'Qual o prazo de produção e envio?', a:'O prazo de produção varia de 1 a 9 dias úteis dependendo do produto (informado na página de cada item). Após a produção, o envio leva de 2 a 10 dias úteis conforme a modalidade escolhida.' },
+    { q:'Vocês entregam para todo o Brasil?', a:'Sim! Enviamos via Correios (PAC e SEDEX) e transportadoras parceiras para todos os estados brasileiros.' },
+    { q:'Posso personalizar cores e tamanhos?', a:'Muitos produtos permitem escolha de cor. Para tamanhos ou personalizações especiais, entre em contato pelo WhatsApp antes da compra.' },
+    { q:'Quais formas de pagamento são aceitas?', a:'Aceitamos Pix, cartão de crédito (em até 3x sem juros) e boleto bancário, com processamento seguro via Stripe e Mercado Pago.' },
+    { q:'Como funciona a troca ou devolução?', a:'Você tem até 7 dias corridos após o recebimento para solicitar troca ou devolução, conforme o Código de Defesa do Consumidor. Veja nossa Política de Trocas.' },
+    { q:'O material é resistente?', a:'Utilizamos filamentos PLA e PETG de alta qualidade, resistentes ao uso cotidiano. Itens para uso externo ou próximos a fontes de calor têm recomendações específicas na descrição.' },
+  ];
+  document.getElementById('faqList').innerHTML = FAQS.map((f,i)=>`
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">${f.q}<span class="faq-icon">+</span></div>
+      <div class="faq-a">${f.a}</div>
+    </div>`).join('');
+</script>
+</body>
+</html>

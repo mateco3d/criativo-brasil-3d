@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrar — Criativo Brasil 3D</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23121212%22/><text x=%2250%22 y=%2266%22 font-size=%2244%22 fill=%22%23FFC107%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-weight=%22bold%22>CB</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .auth-wrap { max-width: 420px; margin: 0 auto; }
+  .auth-divider { display:flex; align-items:center; gap:12px; color:var(--gray-500); font-size:12.5px; margin: 20px 0; }
+  .auth-divider::before, .auth-divider::after { content:''; flex:1; height:1px; background:#eee; }
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<section class="section">
+  <div class="container auth-wrap">
+    <div style="text-align:center;margin-bottom:30px">
+      <h1 style="font-size:26px">Entrar na Conta</h1>
+      <p style="color:var(--gray-500);margin-top:8px">Acesse seus pedidos, favoritos e endereços.</p>
+    </div>
+    <div class="card">
+      <form onsubmit="event.preventDefault(); showToast('Login realizado!','Bem-vindo(a) de volta.'); setTimeout(()=>location.href='minha-conta.html',900);">
+        <div class="form-group"><label>E-mail</label><input type="email" required></div>
+        <div class="form-group"><label>Senha</label><input type="password" required></div>
+        <div style="text-align:right;margin-bottom:18px"><a href="esqueci-senha.html" style="font-size:13px;color:var(--gold-dark);font-weight:600">Esqueci minha senha</a></div>
+        <button class="btn btn-gold btn-block" type="submit">Entrar</button>
+      </form>
+      <div class="auth-divider">ou</div>
+      <button class="btn btn-outline btn-block">Entrar com Google</button>
+    </div>
+    <p style="text-align:center;margin-top:20px;font-size:13.5px">Ainda não tem conta? <a href="cadastro.html" style="color:var(--gold-dark);font-weight:700">Cadastre-se</a></p>
+  </div>
+</section>
+<div id="site-footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/main.js"></script>
+<script>mountLayout(null);</script>
+</body>
+</html>

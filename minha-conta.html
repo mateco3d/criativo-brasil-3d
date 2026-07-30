@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minha Conta — Criativo Brasil 3D</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23121212%22/><text x=%2250%22 y=%2266%22 font-size=%2244%22 fill=%22%23FFC107%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-weight=%22bold%22>CB</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .acc-wrap { display: grid; grid-template-columns: 240px 1fr; gap: 32px; align-items: flex-start; }
+  .acc-nav a { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 4px; }
+  .acc-nav a.active, .acc-nav a:hover { background: var(--gray-100); color: var(--black); }
+  .acc-nav a.active { background: var(--black); color: var(--gold); }
+  .acc-panel { display: none; }
+  .acc-panel.active { display: block; }
+  .order-row { display: flex; justify-content: space-between; align-items: center; padding: 18px; border: 1px solid #eee; border-radius: var(--radius); margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+  .order-status { font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; }
+  .st-enviado { background: #e6f7ee; color: #1a9c5f; }
+  .st-processando { background: var(--gold-soft); color: var(--gold-dark); }
+  .st-entregue { background: #eaf2ff; color: #2563eb; }
+  .addr-card { border: 1px solid #eee; border-radius: var(--radius); padding: 18px; margin-bottom: 14px; }
+  @media (max-width: 860px){ .acc-wrap { grid-template-columns: 1fr; } .acc-nav { display:flex; overflow-x:auto; gap:8px; } .acc-nav a { white-space:nowrap; } }
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<div class="page-hero"><div class="container"><h1>Minha Conta</h1><p>Gerencie pedidos, favoritos, endereços e dados pessoais</p></div></div>
+
+<section class="section" style="padding-top:30px">
+  <div class="container">
+    <div class="acc-wrap">
+      <nav class="acc-nav card" id="accNav">
+        <a data-tab="pedidos">📦 Meus Pedidos</a>
+        <a data-tab="favoritos">❤️ Favoritos</a>
+        <a data-tab="enderecos">📍 Endereços</a>
+        <a data-tab="dados">👤 Dados Pessoais</a>
+        <a href="index.html" style="color:var(--red)">🚪 Sair</a>
+      </nav>
+
+      <div>
+        <div class="acc-panel" id="panel-pedidos">
+          <h3 style="margin-bottom:18px">Histórico de Pedidos</h3>
+          <div id="ordersList"></div>
+        </div>
+
+        <div class="acc-panel" id="panel-favoritos">
+          <h3 style="margin-bottom:18px">Produtos Favoritos</h3>
+          <div class="prod-grid" id="favGrid"></div>
+        </div>
+
+        <div class="acc-panel" id="panel-enderecos">
+          <h3 style="margin-bottom:18px">Endereços Salvos</h3>
+          <div class="addr-card">
+            <strong>Casa</strong>
+            <p style="font-size:13.5px;color:var(--gray-600);margin-top:6px">Rua Exemplo, 123 — Centro, São Paulo/SP — 01000-000</p>
+            <div style="margin-top:10px;display:flex;gap:8px"><button class="btn btn-sm btn-outline">Editar</button><button class="btn btn-sm btn-ghost">Remover</button></div>
+          </div>
+          <button class="btn btn-black" onclick="showToast('Novo endereço','Formulário de novo endereço em breve.')">+ Adicionar Endereço</button>
+        </div>
+
+        <div class="acc-panel" id="panel-dados">
+          <h3 style="margin-bottom:18px">Dados Pessoais</h3>
+          <div class="card">
+            <form onsubmit="event.preventDefault(); showToast('Dados atualizados!','Suas informações foram salvas.')">
+              <div class="form-row cols-2">
+                <div class="form-group"><label>Nome Completo</label><input type="text" value="Cliente Exemplo"></div>
+                <div class="form-group"><label>CPF</label><input type="text" value="000.000.000-00"></div>
+              </div>
+              <div class="form-row cols-2">
+                <div class="form-group"><label>E-mail</label><input type="email" value="cliente@email.com"></div>
+                <div class="form-group"><label>Telefone</label><input type="tel" value="(11) 91234-5678"></div>
+              </div>
+              <button class="btn btn-gold" type="submit">Salvar Alterações</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/main.js"></script>
+<script>
+  mountLayout(null);
+
+  const MOCK_ORDERS = [
+    { id:'CB3D-482910', date:'22/07/2026', status:'entregue', total: 219.80, items:2 },
+    { id:'CB3D-479205', date:'10/07/2026', status:'enviado', total: 89.90, items:1 },
+    { id:'CB3D-471102', date:'28/06/2026', status:'processando', total: 349.70, items:3 },
+  ];
+  const statusLabel = { entregue:['Entregue','st-entregue'], enviado:['Enviado','st-enviado'], processando:['Processando','st-processando'] };
+  document.getElementById('ordersList').innerHTML = MOCK_ORDERS.map(o => `
+    <div class="order-row">
+      <div><strong>${o.id}</strong><div style="font-size:12.5px;color:var(--gray-500)">${o.date} · ${o.items} ${o.items>1?'itens':'item'}</div></div>
+      <span class="order-status ${statusLabel[o.status][1]}">${statusLabel[o.status][0]}</span>
+      <strong>${formatBRL(o.total)}</strong>
+      <button class="btn btn-sm btn-outline">Ver Detalhes</button>
+    </div>`).join('');
+
+  function renderFavs(){
+    const favs = Favorites.get().map(getProduct).filter(Boolean);
+    document.getElementById('favGrid').innerHTML = favs.length ? favs.map(productCardHTML).join('') : '<p style="color:var(--gray-500)">Você ainda não favoritou nenhum produto.</p>';
+  }
+  renderFavs();
+
+  const tabs = document.querySelectorAll('#accNav a[data-tab]');
+  function activateTab(name){
+    tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+    document.querySelectorAll('.acc-panel').forEach(p=>p.classList.toggle('active', p.id === 'panel-'+name));
+  }
+  tabs.forEach(t=>t.addEventListener('click', (e)=>{ e.preventDefault(); activateTab(t.dataset.tab); history.replaceState(null,'','minha-conta.html?tab='+t.dataset.tab); }));
+  activateTab(new URLSearchParams(location.search).get('tab') || 'pedidos');
+</script>
+</body>
+</html>

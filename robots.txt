@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /minha-conta.html
+Disallow: /checkout.html
+Disallow: /carrinho.html
+
+Sitemap: https://www.criativobrasil3d.com.br/sitemap.xml

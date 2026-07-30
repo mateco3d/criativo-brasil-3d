@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sobre Nós — Criativo Brasil 3D</title>
+<meta name="description" content="Conheça a história da Criativo Brasil 3D, especialista em impressão 3D com produção própria e qualidade premium.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23121212%22/><text x=%2250%22 y=%2266%22 font-size=%2244%22 fill=%22%23FFC107%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-weight=%22bold%22>CB</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="site-header"></div>
+<div class="page-hero"><div class="container"><h1>Sobre a Criativo Brasil 3D</h1><p>Tecnologia, criatividade e produção própria em cada peça</p></div></div>
+
+<section class="section">
+  <div class="container grid-2">
+    <div>
+      <span class="eyebrow">Nossa História</span>
+      <h2 class="section-title">Do sonho à impressora, uma peça de cada vez</h2>
+      <p style="margin-top:18px;color:var(--gray-600);line-height:1.8">A Criativo Brasil 3D nasceu da paixão por tecnologia e design. Começamos em uma pequena oficina com uma única impressora 3D e hoje produzimos centenas de peças personalizadas por mês, sempre com o mesmo compromisso: qualidade premium, acabamento cuidadoso e atendimento próximo ao cliente.</p>
+      <p style="margin-top:14px;color:var(--gray-600);line-height:1.8">Trabalhamos com produção própria, o que nos permite controlar cada etapa — da modelagem 3D à embalagem final — garantindo peças únicas para decoração, presentes, uso pessoal e profissional em todo o Brasil.</p>
+    </div>
+    <div class="why-grid" style="grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card" style="text-align:center"><h2 style="font-size:32px;color:var(--gold-dark)">+5.000</h2><p style="color:var(--gray-500);font-size:13px;margin-top:6px">Peças produzidas</p></div>
+      <div class="card" style="text-align:center"><h2 style="font-size:32px;color:var(--gold-dark)">+2.500</h2><p style="color:var(--gray-500);font-size:13px;margin-top:6px">Clientes satisfeitos</p></div>
+      <div class="card" style="text-align:center"><h2 style="font-size:32px;color:var(--gold-dark)">27</h2><p style="color:var(--gray-500);font-size:13px;margin-top:6px">Estados atendidos</p></div>
+      <div class="card" style="text-align:center"><h2 style="font-size:32px;color:var(--gold-dark)">4.8★</h2><p style="color:var(--gray-500);font-size:13px;margin-top:6px">Avaliação média</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-dark">
+  <div class="container">
+    <div class="section-head reveal" style="justify-content:center;text-align:center;flex-direction:column">
+      <span class="eyebrow">Nossos Valores</span>
+      <h2 class="section-title">O Que Nos Move</h2>
+    </div>
+    <div class="why-grid" id="valuesGrid"></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="cta-banner reveal">
+      <div><h3>Quer uma peça 100% sua?</h3><p>Fale com a gente e transforme sua ideia em um produto físico.</p></div>
+      <a href="contato.html" class="btn btn-gold">Entrar em Contato</a>
+    </div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/main.js"></script>
+<script>
+  mountLayout(null);
+  const values = [
+    { ic: ICO.medal, t:'Qualidade', d:'Cada peça passa por controle de qualidade antes do envio.' },
+    { ic: ICO.factory, t:'Produção Própria', d:'Sem intermediários, do design à impressão.' },
+    { ic: ICO.headset, t:'Atendimento Humano', d:'Time pronto para ajudar em cada etapa da compra.' },
+    { ic: ICO.truck, t:'Compromisso com Prazo', d:'Produção e envio dentro do prometido.' },
+  ];
+  document.getElementById('valuesGrid').innerHTML = values.map(v=>`<div class="why-item"><div class="why-ic">${v.ic}</div><h4>${v.t}</h4><p>${v.d}</p></div>`).join('');
+</script>
+</body>
+</html>

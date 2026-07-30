@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recuperar Senha — Criativo Brasil 3D</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23121212%22/><text x=%2250%22 y=%2266%22 font-size=%2244%22 fill=%22%23FFC107%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-weight=%22bold%22>CB</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>.auth-wrap { max-width: 420px; margin: 0 auto; }</style>
+</head>
+<body>
+<div id="site-header"></div>
+<section class="section">
+  <div class="container auth-wrap">
+    <div style="text-align:center;margin-bottom:30px">
+      <h1 style="font-size:26px">Esqueci Minha Senha</h1>
+      <p style="color:var(--gray-500);margin-top:8px">Enviaremos um link de redefinição para o seu e-mail.</p>
+    </div>
+    <div class="card">
+      <form onsubmit="event.preventDefault(); showToast('E-mail enviado!','Verifique sua caixa de entrada.'); this.reset();">
+        <div class="form-group"><label>E-mail cadastrado</label><input type="email" required></div>
+        <button class="btn btn-gold btn-block" type="submit">Enviar Link de Recuperação</button>
+      </form>
+    </div>
+    <p style="text-align:center;margin-top:20px;font-size:13.5px"><a href="login.html" style="color:var(--gold-dark);font-weight:700">← Voltar para o login</a></p>
+  </div>
+</section>
+<div id="site-footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/main.js"></script>
+<script>mountLayout(null);</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Categorias — Painel Admin | Criativo Brasil 3D</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/admin.js"></script>
+<script>
+  adminLayout('categorias.html', 'Categorias', 'Organize os produtos da loja por categoria');
+  const c = document.getElementById('adminContent');
+  AdminStore.seed();
+
+  function render(){
+    const cats = AdminStore.get('categories');
+    document.getElementById('catTbody').innerHTML = cats.map((cat,i) => `
+      <tr>
+        <td><div class="admin-thumb">${iconFor(cat.slug)}</div></td>
+        <td><strong>${cat.name}</strong></td>
+        <td style="color:#999">${cat.slug}</td>
+        <td>${cat.desc}</td>
+        <td>${PRODUCTS.filter(p=>p.cat===cat.slug).length} produtos</td>
+        <td><div class="row-actions"><button title="Editar" onclick="editCat(${i})">${AICO.edit}</button><button title="Excluir" onclick="delCat(${i})">${AICO.trash}</button></div></td>
+      </tr>`).join('');
+  }
+  function delCat(i){
+    if (!confirm('Excluir esta categoria?')) return;
+    const cats = AdminStore.get('categories'); cats.splice(i,1); AdminStore.set('categories', cats); render();
+  }
+  function editCat(i){
+    const cats = AdminStore.get('categories'); const cat = cats[i];
+    const name = prompt('Nome da categoria:', cat.name); if (name===null) return;
+    cat.name = name; AdminStore.set('categories', cats); render();
+  }
+  document.addEventListener('DOMContentLoaded', render);
+
+  c.innerHTML = `
+    <div class="admin-panel">
+      <div class="admin-toolbar">
+        <h3 style="margin:0">Todas as Categorias</h3>
+        <button class="btn btn-gold btn-sm" onclick="addCat()">${AICO.plus} Nova Categoria</button>
+      </div>
+      <table class="admin-table">
+        <thead><tr><th></th><th>Nome</th><th>Slug</th><th>Descrição</th><th>Produtos</th><th>Ações</th></tr></thead>
+        <tbody id="catTbody"></tbody>
+      </table>
+    </div>`;
+  function addCat(){
+    const name = prompt('Nome da nova categoria:'); if (!name) return;
+    const cats = AdminStore.get('categories');
+    cats.push({ slug: name.toLowerCase().replace(/\s+/g,'-'), name, desc: 'Nova categoria' });
+    AdminStore.set('categories', cats); render();
+  }
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Criativo Brasil 3D — Impressão 3D Premium para Casa, Geek e Personalizados</title>
+<meta name="description" content="Loja de produtos em impressão 3D: decoração geek, Funko personalizado, organização, casa, escritório, narguile, automotivo e itens sob medida. Produção própria e entrega para todo o Brasil.">
+<meta name="keywords" content="impressão 3d, funko personalizado, decoração geek, loja impressão 3d, criativo brasil 3d">
+<link rel="canonical" href="https://www.criativobrasil3d.com.br/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Criativo Brasil 3D — Impressão 3D Premium">
+<meta property="og:description" content="Produtos exclusivos em impressão 3D. Produção própria, alta qualidade e entrega para todo o Brasil.">
+<meta property="og:url" content="https://www.criativobrasil3d.com.br/">
+<meta property="og:locale" content="pt_BR">
+<meta name="robots" content="index, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23121212%22/><text x=%2250%22 y=%2266%22 font-size=%2244%22 fill=%22%23FFC107%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-weight=%22bold%22>CB</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "OnlineStore",
+  "name": "Criativo Brasil 3D",
+  "url": "https://www.criativobrasil3d.com.br",
+  "description": "Loja de produtos em impressão 3D sob medida.",
+  "sameAs": ["https://instagram.com/criativobrasil3d"]
+}
+</script>
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<div id="heroMount"></div>
+
+<!-- CATEGORIAS -->
+<section class="section" id="categorias">
+  <div class="container">
+    <div class="section-head reveal">
+      <div>
+        <span class="eyebrow">Explore</span>
+        <h2 class="section-title">Categorias</h2>
+        <p class="section-sub">Encontre o produto perfeito para o seu estilo, sua casa ou seu presente.</p>
+      </div>
+      <a href="produtos.html" class="btn btn-outline">Ver Todas</a>
+    </div>
+    <div class="cat-grid" id="catGrid"></div>
+  </div>
+</section>
+
+<!-- PRODUTOS EM DESTAQUE -->
+<section class="section section-soft" id="destaques">
+  <div class="container">
+    <div class="section-head reveal">
+      <div>
+        <span class="eyebrow">Selecionados para você</span>
+        <h2 class="section-title">Produtos em Destaque</h2>
+        <p class="section-sub">Os favoritos da nossa comunidade, com qualidade premium garantida.</p>
+      </div>
+      <a href="produtos.html" class="btn btn-outline">Ver Catálogo Completo</a>
+    </div>
+    <div class="prod-grid reveal" id="featuredGrid"></div>
+  </div>
+</section>
+
+<!-- MAIS VENDIDOS -->
+<section class="section" id="mais-vendidos">
+  <div class="container">
+    <div class="section-head reveal">
+      <div>
+        <span class="eyebrow">Sucesso de vendas</span>
+        <h2 class="section-title">Mais Vendidos</h2>
+      </div>
+      <div class="carousel-nav">
+        <button id="bestPrev">${''}</button>
+        <button id="bestNext">${''}</button>
+      </div>
+    </div>
+    <div class="carousel-row reveal" id="bestRow"></div>
+  </div>
+</section>
+
+<!-- LANÇAMENTOS -->
+<section class="section section-soft" id="lancamentos">
+  <div class="container">
+    <div class="section-head reveal">
+      <div>
+        <span class="eyebrow">Acabou de chegar</span>
+        <h2 class="section-title">Lançamentos</h2>
+      </div>
+      <div class="carousel-nav">
+        <button id="newPrev"></button>
+        <button id="newNext"></button>
+      </div>
+    </div>
+    <div class="carousel-row reveal" id="newRow"></div>
+  </div>
+</section>
+
+<!-- POR QUE COMPRAR -->
+<section class="section section-dark" id="porque-comprar">
+  <div class="container">
+    <div class="section-head reveal">
+      <div>
+        <span class="eyebrow">Nossos diferenciais</span>
+        <h2 class="section-title">Por Que Comprar Com a Gente</h2>
+      </div>
+    </div>
+    <div class="why-grid reveal" id="whyGrid"></div>
+  </div>
+</section>
+
+<!-- PROCESSO -->
+<section class="section" id="processo">
+  <div class="container">
+    <div class="section-head reveal" style="justify-content:center;text-align:center;flex-direction:column">
+      <span class="eyebrow">Como funciona</span>
+      <h2 class="section-title">Do Pedido à Sua Casa</h2>
+    </div>
+    <div class="process-row reveal" id="processRow"></div>
+  </div>
+</section>
+
+<!-- AVALIAÇÕES -->
+<section class="section section-soft" id="avaliacoes">
+  <div class="container">
+    <div class="section-head reveal" style="justify-content:center;text-align:center;flex-direction:column">
+      <span class="eyebrow">Depoimentos</span>
+      <h2 class="section-title">O Que Nossos Clientes Dizem</h2>
+    </div>
+    <div class="review-grid reveal" id="reviewGrid"></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section">
+  <div class="container">
+    <div class="cta-banner reveal">
+      <div>
+        <h3>Tem uma ideia? Nós imprimimos.</h3>
+        <p>Fale com nosso time e crie um produto 100% personalizado, sob medida para você.</p>
+      </div>
+      <a href="contato.html" class="btn btn-gold">Falar com a Equipe</a>
+    </div>
+  </div>
+</section>
+
+<!-- INSTAGRAM -->
+<section class="section" id="instagram">
+  <div class="container">
+    <div class="section-head reveal" style="justify-content:center;text-align:center;flex-direction:column">
+      <span class="eyebrow">@criativobrasil3d</span>
+      <h2 class="section-title">Siga no Instagram</h2>
+    </div>
+    <div class="insta-grid reveal" id="instaGrid"></div>
+  </div>
+</section>
+
+<!-- NEWSLETTER -->
+<section class="section section-soft">
+  <div class="container">
+    <div class="newsletter reveal">
+      <div>
+        <span class="eyebrow" style="color:#121212">Fique por dentro</span>
+        <h3>Receba novidades e cupons exclusivos</h3>
+      </div>
+      <form class="newsletter-form" onsubmit="event.preventDefault(); showToast('Inscrição confirmada!','Você vai receber nossas novidades em breve.'); this.reset();">
+        <input type="email" placeholder="Seu melhor e-mail" required>
+        <button class="btn btn-black" type="submit">Assinar</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/main.js"></script>
+<script>
+  mountLayout('index.html');
+  renderHero('heroMount');
+
+  // Categorias
+  document.getElementById('catGrid').innerHTML = CATEGORIES.map(c => `
+    <a href="produtos.html?cat=${c.slug}" class="cat-card">
+      <div class="cat-bg">${iconFor(c.slug)}</div>
+      <div class="cat-label">${c.name}<span>${c.desc}</span></div>
+    </a>`).join('');
+
+  // Destaques (mistura tags)
+  const featured = PRODUCTS.filter(p => p.tags && p.tags.length).slice(0, 8);
+  document.getElementById('featuredGrid').innerHTML = featured.map(productCardHTML).join('');
+
+  // Mais vendidos
+  const best = PRODUCTS.filter(p => p.tags.includes('mais-vendido'));
+  document.getElementById('bestRow').innerHTML = best.map(productCardHTML).join('');
+  document.getElementById('bestRow').id = 'bestRow';
+  initCarouselNav('bestRow','bestPrev','bestNext');
+  document.getElementById('bestPrev').innerHTML = ICO.chevL;
+  document.getElementById('bestNext').innerHTML = ICO.chevR;
+
+  // Lançamentos
+  const news = PRODUCTS.filter(p => p.tags.includes('novo'));
+  document.getElementById('newRow').innerHTML = news.map(productCardHTML).join('');
+  initCarouselNav('newRow','newPrev','newNext');
+  document.getElementById('newPrev').innerHTML = ICO.chevL;
+  document.getElementById('newNext').innerHTML = ICO.chevR;
+
+  // Por que comprar
+  const whys = [
+    { ic: ICO.truck, t:'Entrega para todo Brasil', d:'Enviamos via Correios e transportadoras parceiras para qualquer estado.' },
+    { ic: ICO.factory, t:'Produção Própria', d:'Impressão feita em nosso próprio parque de máquinas, sem intermediários.' },
+    { ic: ICO.medal, t:'Alta Qualidade', d:'Materiais selecionados e acabamento premium em cada peça.' },
+    { ic: ICO.headset, t:'Suporte Rápido', d:'Atendimento ágil via WhatsApp para tirar todas as suas dúvidas.' },
+    { ic: ICO.lock, t:'Pagamento Seguro', d:'Ambiente 100% protegido com Pix, cartão e boleto.' },
+  ];
+  document.getElementById('whyGrid').innerHTML = whys.map(w => `
+    <div class="why-item"><div class="why-ic">${w.ic}</div><h4>${w.t}</h4><p>${w.d}</p></div>`).join('');
+
+  // Processo
+  const steps = [
+    { n:1, t:'Você escolhe', d:'Navegue pelo catálogo ou peça um item personalizado.' },
+    { n:2, t:'Nós produzimos', d:'Sua peça é impressa com cuidado em nosso ateliê.' },
+    { n:3, t:'Embalamos', d:'Embalagem segura para o produto chegar perfeito.' },
+    { n:4, t:'Enviamos', d:'Postagem rápida com código de rastreio.' },
+    { n:5, t:'Você recebe', d:'Sua peça exclusiva chega até a sua porta.' },
+  ];
+  document.getElementById('processRow').innerHTML = steps.map(s => `
+    <div class="process-item"><div class="process-num">${s.n}</div><h4>${s.t}</h4><p>${s.d}</p></div>`).join('');
+
+  // Avaliações
+  document.getElementById('reviewGrid').innerHTML = REVIEWS.slice(0,6).map(r => `
+    <div class="review-card">
+      <div class="review-stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+      <p class="review-text">“${r.text}”</p>
+      <div class="review-user">
+        <div class="review-avatar">${r.name.split(' ').map(n=>n[0]).slice(0,2).join('')}</div>
+        <div><div class="review-name">${r.name}</div><div class="review-loc">${r.loc}</div></div>
+      </div>
+    </div>`).join('');
+
+  // Instagram
+  document.getElementById('instaGrid').innerHTML = Array.from({length:6}).map((_,i) => `
+    <a href="#" class="insta-item">${iconFor(CATEGORIES[i%CATEGORIES.length].slug)}<span class="ig-icon">${ICO.insta}</span></a>`).join('');
+</script>
+</body>
+</html>

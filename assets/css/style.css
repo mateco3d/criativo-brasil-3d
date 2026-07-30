@@ -96,11 +96,6 @@ input, select, textarea { font-family: inherit; }
 .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
 
 /* ---------- Header ---------- */
-.announce-bar {
-  background: var(--black); color: var(--gold); text-align: center;
-  font-size: 12.5px; font-weight: 600; letter-spacing: .04em;
-  padding: 8px 12px;
-}
 header.site-header {
   position: sticky; top: 0; z-index: 200;
   background: rgba(255,255,255,.92);
@@ -117,7 +112,11 @@ header.site-header.scrolled { box-shadow: 0 4px 20px rgba(0,0,0,.06); }
 .main-nav a { font-weight: 600; font-size: 14.5px; position: relative; padding: 6px 0; }
 .main-nav a::after { content: ''; position: absolute; left: 0; bottom: 0; width: 0; height: 2px; background: var(--gold); transition: width .25s var(--ease); }
 .main-nav a:hover::after, .main-nav a.active::after { width: 100%; }
-.header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.header-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.header-actions .btn-icon { background: transparent; color: var(--gray-700); width: 38px; height: 38px; min-width: 38px; }
+.header-actions .btn-icon svg { width: 19px; height: 19px; stroke-width: 1.6; }
+.header-actions .btn-icon:hover { background: var(--gray-100); color: var(--black); }
+.header-actions .btn-icon:active { background: var(--gray-100); }
 .header-search { position: relative; display: flex; align-items: center; }
 .header-search input { width: 230px; padding: 10px 40px 10px 16px; border-radius: 999px; border: 1.5px solid #e6e6e6; font-size: 13.5px; transition: border-color .2s, width .3s; }
 .header-search input:focus { outline: none; border-color: var(--gold); width: 270px; }

@@ -229,13 +229,15 @@
         btn.textContent = originalLabel;
         return;
       }
+      const linesSnapshot = Cart.lines().map(l => ({ id: l.id, name: l.product.name, cat: l.product.cat, qty: l.qty, price: l.subtotal }));
       localStorage.setItem('cb3d_last_order', JSON.stringify({
         id: data.orderCode,
         total: data.total,
         date: new Date().toISOString(),
         cliente: nome,
         email,
-        items: Cart.lines().reduce((n, l) => n + l.qty, 0),
+        items: linesSnapshot.reduce((n, l) => n + l.qty, 0),
+        itemsDetail: linesSnapshot,
       }));
       localStorage.removeItem('cb3d_coupon');
       Cart.clear();

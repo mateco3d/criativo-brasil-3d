@@ -91,9 +91,11 @@
       id,
       cliente: (order && order.cliente) || 'Cliente',
       date: dateStr,
+      ts: isNaN(dateObj) ? Date.now() : dateObj.getTime(),
       total: (order && order.total) || 0,
       status,
       items: (order && order.items) || 1,
+      itemsDetail: (order && order.itemsDetail) || [],
     };
     const existing = orders.find(o => o.id === id);
     if (existing) { Object.assign(existing, record); } else { orders.unshift(record); }

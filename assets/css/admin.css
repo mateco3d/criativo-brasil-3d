@@ -13,6 +13,8 @@ body.admin-body { background: #f4f5f7; font-family: 'Poppins','Segoe UI',Arial,s
 .admin-nav a.active { background: var(--gold); color: var(--black); }
 .admin-nav .nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #666; margin: 20px 0 8px; padding: 0 14px; }
 .admin-nav svg { width: 17px; height: 17px; flex-shrink: 0; }
+.admin-nav a { position: relative; }
+.nav-badge { margin-left: auto; background: #e34747; color: #fff; font-size: 10.5px; font-weight: 700; line-height: 1; padding: 4px 7px; border-radius: 20px; display: none; }
 .admin-back { display: block; margin-top: 20px; padding: 12px 14px; font-size: 12.5px; color: #888; border-top: 1px solid #262626; padding-top: 18px; }
 .admin-back:hover { color: var(--gold); }
 

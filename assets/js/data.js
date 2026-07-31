@@ -104,3 +104,23 @@ const QA_SAMPLE = [
   { q:'Qual o prazo de produção antes do envio?', a:'O prazo de produção está descrito em cada produto (normalmente de 1 a 7 dias úteis) e começa a contar após a confirmação do pagamento.' },
   { q:'Posso pedir uma cor personalizada que não está na lista?', a:'Sim! Entre em contato pelo WhatsApp antes da compra e verificamos a disponibilidade do filamento na cor desejada.' },
 ];
+
+/* ---------------- Sincroniza com o Painel Admin ----------------
+   O painel admin salva os dados em localStorage (este protótipo ainda não
+   tem banco de dados real — ver docs/ARQUITETURA.md). Sem isto, produtos,
+   categorias e banners criados/editados/excluídos no admin não apareciam
+   na loja, porque as páginas da loja liam direto dos arrays estáticos
+   acima. Aqui sobrescrevemos esses arrays com o que estiver salvo no
+   localStorage (se houver), logo após serem declarados, para que loja e
+   admin sempre mostrem os mesmos dados no mesmo navegador/dispositivo. */
+(function syncFromAdminStore(){
+  function applyOverride(list, storageKey){
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey));
+      if (Array.isArray(saved)) { list.length = 0; list.push(...saved); }
+    } catch (e) { /* localStorage indisponível ou dado inválido: mantém os dados padrão */ }
+  }
+  applyOverride(PRODUCTS, 'cb3d_admin_products');
+  applyOverride(CATEGORIES, 'cb3d_admin_categories');
+  applyOverride(BANNERS, 'cb3d_admin_banners');
+})();

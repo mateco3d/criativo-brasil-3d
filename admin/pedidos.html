@@ -21,20 +21,12 @@
   const STATUS = ['Aguardando Pagamento','Processando','Enviado','Entregue','Cancelado'];
   const stPill = { 'Aguardando Pagamento':'pill-gray','Processando':'pill-gold','Enviado':'pill-blue','Entregue':'pill-green','Cancelado':'pill-red' };
 
-  const seedOrders = () => {
-    if (localStorage.getItem('cb3d_admin_orders')) return;
-    const names = ['Camila Souza','Rafael Lima','Juliana Prado','Diego Martins','Fernanda Alves','Bruno Castro'];
-    const orders = Array.from({length:14}).map((_,i) => ({
-      id: 'CB3D-'+(482000-i*13),
-      cliente: names[i%names.length],
-      date: `${20-Math.floor(i/2)}/07/2026`,
-      total: +(59.9 + Math.random()*400).toFixed(2),
-      status: STATUS[i % STATUS.length],
-      items: 1 + (i%3),
-    }));
-    localStorage.setItem('cb3d_admin_orders', JSON.stringify(orders));
-  };
-  seedOrders();
+  // Pedidos reais são registrados aqui automaticamente quando um cliente
+  // finaliza uma compra pelo checkout (ver pedido-confirmado.html). Sem
+  // banco de dados ainda, só aparecem os pedidos feitos NESTE navegador.
+  if (!localStorage.getItem('cb3d_admin_orders')) {
+    localStorage.setItem('cb3d_admin_orders', JSON.stringify([]));
+  }
 
   function render(filter){
     let orders = JSON.parse(localStorage.getItem('cb3d_admin_orders')||'[]');

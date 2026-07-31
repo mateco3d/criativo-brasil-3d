@@ -13,15 +13,15 @@
 <div id="site-header"></div>
 <section class="section" style="min-height:60vh;display:flex;align-items:center">
   <div class="container" style="text-align:center;max-width:560px">
-    <div style="width:88px;height:88px;border-radius:50%;background:var(--gold-soft);display:flex;align-items:center;justify-content:center;margin:0 auto 24px">
+    <div id="statusIcon" style="width:88px;height:88px;border-radius:50%;background:var(--gold-soft);display:flex;align-items:center;justify-content:center;margin:0 auto 24px">
       <svg viewBox="0 0 24 24" fill="none" stroke="#FFC107" stroke-width="2" style="width:44px;height:44px"><path d="M20 6L9 17l-5-5"/></svg>
     </div>
-    <h1 style="font-size:30px">Pedido Confirmado!</h1>
-    <p style="color:var(--gray-500);margin-top:12px">Obrigado pela sua compra. Enviamos os detalhes para o seu e-mail e você pode acompanhar tudo pela sua conta.</p>
+    <h1 id="statusTitle" style="font-size:30px">Pedido Confirmado!</h1>
+    <p id="statusMsg" style="color:var(--gray-500);margin-top:12px">Obrigado pela sua compra. Enviamos os detalhes para o seu e-mail e você pode acompanhar tudo pela sua conta.</p>
     <div class="card" style="margin:28px 0;text-align:left">
       <div class="summary-row"><span>Número do Pedido</span><strong id="orderId">—</strong></div>
       <div class="summary-row"><span>Total</span><strong id="orderTotal">—</strong></div>
-      <div class="summary-row"><span>Status</span><span class="badge-soft">Pagamento em Confirmação</span></div>
+      <div class="summary-row"><span>Status</span><span class="badge-soft" id="statusBadge">Pagamento em Confirmação</span></div>
     </div>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
       <a href="minha-conta.html?tab=pedidos" class="btn btn-outline">Ver Meus Pedidos</a>
@@ -34,11 +34,36 @@
 <script src="assets/js/main.js"></script>
 <script>
   mountLayout(null);
-  const id = new URLSearchParams(location.search).get('id');
+  const params = new URLSearchParams(location.search);
+  // O Mercado Pago acrescenta seus próprios parâmetros (status, collection_status,
+  // external_reference, payment_id) à URL de retorno que configuramos.
+  const orderCode = params.get('order') || params.get('external_reference');
+  const mpStatus = params.get('collection_status') || params.get('status');
   let order = null;
   try { order = JSON.parse(localStorage.getItem('cb3d_last_order')); } catch(e){}
-  document.getElementById('orderId').textContent = id || (order && order.id) || 'CB3D-000000';
+
+  document.getElementById('orderId').textContent = orderCode || (order && order.id) || 'CB3D-000000';
   document.getElementById('orderTotal').textContent = order ? formatBRL(order.total) : '—';
+
+  const STATUS_MAP = {
+    approved: { title: 'Pagamento Aprovado!', msg: 'Seu pedido foi confirmado e já entrou na fila de produção. Enviamos os detalhes para o seu e-mail.', badge: 'Pago', color: 'var(--green)' },
+    pending: { title: 'Pagamento Pendente', msg: 'Recebemos seu pedido e estamos aguardando a confirmação do pagamento (comum em boleto e alguns métodos Pix).', badge: 'Pendente', color: 'var(--gold-dark)' },
+    in_process: { title: 'Pagamento em Análise', msg: 'Seu pagamento está sendo analisado pelo Mercado Pago. Você receberá a confirmação por e-mail em breve.', badge: 'Em Análise', color: 'var(--gold-dark)' },
+    rejected: { title: 'Pagamento Não Aprovado', msg: 'Seu pagamento não foi aprovado. Você pode tentar novamente com outro método na finalização da compra.', badge: 'Recusado', color: 'var(--red)' },
+    failure: { title: 'Pagamento Não Concluído', msg: 'Algo deu errado ao processar o pagamento. Você pode tentar novamente.', badge: 'Não Concluído', color: 'var(--red)' },
+  };
+  const s = STATUS_MAP[mpStatus] || (mpStatus ? STATUS_MAP.pending : null);
+  if (s){
+    document.getElementById('statusTitle').textContent = s.title;
+    document.getElementById('statusMsg').textContent = s.msg;
+    document.getElementById('statusBadge').textContent = s.badge;
+    document.getElementById('statusBadge').style.background = s.color;
+    document.getElementById('statusBadge').style.color = '#fff';
+    if (mpStatus === 'rejected' || mpStatus === 'failure'){
+      document.getElementById('statusIcon').style.background = '#fdeaea';
+      document.getElementById('statusIcon').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" style="width:44px;height:44px"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    }
+  }
 </script>
 </body>
 </html>

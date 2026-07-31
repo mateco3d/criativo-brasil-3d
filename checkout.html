@@ -82,20 +82,13 @@
             <div class="pay-tab" data-pay="boleto">Boleto</div>
           </div>
           <div class="pay-panel active" id="pay-pix">
-            <p style="font-size:13.5px;color:var(--gray-600);line-height:1.6">Ao confirmar, geramos um QR Code Pix (Mercado Pago / Stripe) com aprovação automática em poucos segundos.</p>
+            <p style="font-size:13.5px;color:var(--gray-600);line-height:1.6">Ao clicar em "Pagar com Mercado Pago", você escolhe Pix na tela segura do Mercado Pago e recebe o QR Code para aprovação em poucos segundos.</p>
           </div>
           <div class="pay-panel" id="pay-cartao">
-            <div class="form-group"><label>Número do Cartão</label><input type="text" placeholder="0000 0000 0000 0000"></div>
-            <div class="form-row cols-3">
-              <div class="form-group"><label>Validade</label><input type="text" placeholder="MM/AA"></div>
-              <div class="form-group"><label>CVV</label><input type="text" placeholder="123"></div>
-              <div class="form-group"><label>Parcelas</label>
-                <select><option>1x sem juros</option><option>2x sem juros</option><option>3x sem juros</option></select>
-              </div>
-            </div>
+            <p style="font-size:13.5px;color:var(--gray-600);line-height:1.6">O número do cartão, validade e CVV são digitados diretamente na tela segura do Mercado Pago — este site nunca tem acesso aos dados do seu cartão. Parcelamento disponível conforme as regras da sua bandeira.</p>
           </div>
           <div class="pay-panel" id="pay-boleto">
-            <p style="font-size:13.5px;color:var(--gray-600);line-height:1.6">O boleto será gerado após a confirmação e enviado para o seu e-mail, com vencimento em 3 dias úteis.</p>
+            <p style="font-size:13.5px;color:var(--gray-600);line-height:1.6">O boleto é gerado na tela do Mercado Pago após a confirmação, com envio por e-mail e vencimento em até 3 dias úteis.</p>
           </div>
         </div>
       </div>
@@ -105,10 +98,11 @@
         <div id="checkoutItems"></div>
         <div class="divider"></div>
         <div class="summary-row"><span>Subtotal</span><span id="coSubtotal">R$ 0,00</span></div>
+        <div class="summary-row" id="coCouponRow" style="display:none;color:var(--green)"><span id="coCouponLabel">Cupom</span><span id="coDesconto">-R$ 0,00</span></div>
         <div class="summary-row"><span>Frete</span><span id="coFrete">A calcular</span></div>
         <div class="summary-row total"><span>Total</span><span id="coTotal">R$ 0,00</span></div>
-        <button type="submit" class="btn btn-gold btn-block" style="margin-top:16px">Finalizar Compra</button>
-        <p style="font-size:11.5px;color:var(--gray-500);text-align:center;margin-top:12px">🔒 Ambiente seguro · Pagamento processado via Stripe / Mercado Pago</p>
+        <button type="submit" class="btn btn-gold btn-block" id="finalizarBtn" style="margin-top:16px">Pagar com Mercado Pago</button>
+        <p style="font-size:11.5px;color:var(--gray-500);text-align:center;margin-top:12px">🔒 Você será redirecionado para o ambiente seguro do Mercado Pago para concluir o pagamento (Pix, cartão ou boleto).</p>
       </div>
     </form>
   </div>
@@ -120,19 +114,30 @@
 <script>
   mountLayout(null);
   let selectedShipping = null;
+  let selectedShippingCode = 'PAC';
+  const COUPONS = { 'BEMVINDO10': .10, 'CB3D15': .15 };
+  const couponCode = localStorage.getItem('cb3d_coupon') || null;
+  const couponPct = (couponCode && COUPONS[couponCode]) || 0;
 
   function renderItems(){
     const lines = Cart.lines();
     document.getElementById('checkoutItems').innerHTML = lines.map(l => `
       <div class="summary-mini-item"><span>${l.qty}x ${l.product.name}</span><span>${formatBRL(l.subtotal)}</span></div>`).join('') || '<p style="color:#999;font-size:13px">Carrinho vazio.</p>';
     document.getElementById('coSubtotal').textContent = formatBRL(Cart.subtotal());
+    if (couponPct > 0){
+      document.getElementById('coCouponRow').style.display = 'flex';
+      document.getElementById('coCouponLabel').textContent = `Cupom ${couponCode} (-${couponPct*100}%)`;
+    }
     updateTotal();
   }
   function updateTotal(){
     const sub = Cart.subtotal();
+    const desconto = round2(sub * couponPct);
     const frete = selectedShipping ? selectedShipping.price : 0;
-    document.getElementById('coTotal').textContent = formatBRL(sub + frete);
+    document.getElementById('coDesconto').textContent = '-' + formatBRL(desconto);
+    document.getElementById('coTotal').textContent = formatBRL(sub - desconto + frete);
   }
+  function round2(n){ return Math.round((n + Number.EPSILON) * 100) / 100; }
   renderItems();
 
   const cepInput = document.getElementById('cepInput');
@@ -162,6 +167,7 @@
           <strong>${o.price === 0 ? 'Grátis' : formatBRL(o.price)}</strong>
         </label>`).join('');
       selectedShipping = options[0];
+      selectedShippingCode = selectedShipping.code;
       document.getElementById('coFrete').textContent = selectedShipping.price === 0 ? 'Grátis' : formatBRL(selectedShipping.price);
       updateTotal();
       document.querySelectorAll('.shipping-opt').forEach((el,i)=>{
@@ -170,6 +176,7 @@
           el.classList.add('selected');
           el.querySelector('input').checked = true;
           selectedShipping = options[i];
+          selectedShippingCode = selectedShipping.code;
           document.getElementById('coFrete').textContent = selectedShipping.price === 0 ? 'Grátis' : formatBRL(selectedShipping.price);
           updateTotal();
         });
@@ -188,14 +195,49 @@
     });
   });
 
-  function finalizarCompra(e){
+  async function finalizarCompra(e){
     e.preventDefault();
     if (!Cart.lines().length){ showToast('Carrinho vazio','Adicione produtos antes de finalizar.'); return; }
     if (!selectedShipping){ showToast('Selecione o frete','Informe o CEP para calcular o envio.'); return; }
-    const orderId = 'CB3D-' + Math.floor(100000 + Math.random()*900000);
-    localStorage.setItem('cb3d_last_order', JSON.stringify({ id: orderId, total: Cart.subtotal()+selectedShipping.price, date: new Date().toISOString() }));
-    Cart.clear();
-    location.href = 'pedido-confirmado.html?id=' + orderId;
+    const form = document.getElementById('checkoutForm');
+    if (!form.checkValidity()){ form.reportValidity(); return; }
+
+    const inputs = form.querySelectorAll('input');
+    const nome = inputs[0].value, telefone = inputs[2].value, email = inputs[3].value;
+
+    const btn = document.getElementById('finalizarBtn');
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Conectando ao Mercado Pago...';
+
+    try {
+      const resp = await fetch('/api/create-preference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: Cart.lines().map(l => ({ id: l.id, qty: l.qty })),
+          cep: cepInput.value,
+          shippingCode: selectedShippingCode,
+          couponCode: couponCode,
+          buyer: { name: nome, email, phone: telefone },
+        }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.init_point){
+        showToast('Não foi possível iniciar o pagamento', data.error || 'Tente novamente em instantes.');
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+        return;
+      }
+      localStorage.setItem('cb3d_last_order', JSON.stringify({ id: data.orderCode, total: data.total, date: new Date().toISOString() }));
+      localStorage.removeItem('cb3d_coupon');
+      Cart.clear();
+      location.href = data.init_point;
+    } catch (err) {
+      showToast('Erro de conexão', 'Não foi possível falar com o servidor de pagamento.');
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    }
   }
   document.addEventListener('cart:update', renderItems);
 </script>

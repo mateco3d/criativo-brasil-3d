@@ -18,40 +18,74 @@
   adminLayout('index.html', 'Dashboard', 'Visão geral do desempenho da loja');
   const c = document.getElementById('adminContent');
 
+  /* ---------------- Dashboard calculado a partir de pedidos reais ----------------
+     Antes, todos os números aqui eram fixos/fictícios. Agora tudo é calculado
+     em cima de cb3d_admin_orders (pedidos reais feitos pelo checkout — ver
+     pedido-confirmado.html), então o dashboard atualiza sozinho a cada novo
+     pedido. Limitação do protótipo: só enxerga pedidos feitos NESTE navegador
+     (sem banco de dados ainda — ver docs/ARQUITETURA.md). */
+  let orders = [];
+  try { orders = JSON.parse(localStorage.getItem('cb3d_admin_orders')) || []; } catch (e) { orders = []; }
+  const isCounted = o => o.status !== 'Cancelado';
+
+  const MONTH_LABELS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const now = new Date();
+  const monthKey = ts => { const d = new Date(ts); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+  const ordersInMonth = key => orders.filter(o => isCounted(o) && o.ts && monthKey(o.ts) === key);
+  const sum = list => list.reduce((s, o) => s + (o.total || 0), 0);
+  const pctDelta = (cur, prev) => (prev ? ((cur - prev) / prev) * 100 : null);
+  const deltaLabel = d => (d === null || !isFinite(d)) ? '—' : (d >= 0 ? '+' : '') + d.toFixed(0) + '%';
+
+  const curKey = monthKey(now.getTime());
+  const prevKey = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime());
+  const curOrders = ordersInMonth(curKey), prevOrders = ordersInMonth(prevKey);
+  const curFat = sum(curOrders), prevFat = sum(prevOrders);
+  const curPedidos = curOrders.length, prevPedidos = prevOrders.length;
+  const curTicket = curPedidos ? curFat / curPedidos : 0, prevTicket = prevPedidos ? prevFat / prevPedidos : 0;
+  const curClientes = new Set(curOrders.map(o => o.cliente)).size, prevClientes = new Set(prevOrders.map(o => o.cliente)).size;
+
+  const mk = d => d === null ? '' : (d >= 0 ? 'up' : 'down');
   const stats = [
-    { ic:'money', label:'Faturamento (mês)', val: formatBRL(48250.90), delta:'+18%', up:true },
-    { ic:'cart', label:'Pedidos (mês)', val: '312', delta:'+9%', up:true },
-    { ic:'bag', label:'Ticket Médio', val: formatBRL(154.65), delta:'+4%', up:true },
-    { ic:'users', label:'Novos Clientes', val: '87', delta:'-3%', up:false },
+    { ic:'money', label:'Faturamento (mês)', val: formatBRL(curFat), delta: deltaLabel(pctDelta(curFat, prevFat)), up: mk(pctDelta(curFat, prevFat)) },
+    { ic:'cart', label:'Pedidos (mês)', val: String(curPedidos), delta: deltaLabel(pctDelta(curPedidos, prevPedidos)), up: mk(pctDelta(curPedidos, prevPedidos)) },
+    { ic:'bag', label:'Ticket Médio', val: formatBRL(curTicket), delta: deltaLabel(pctDelta(curTicket, prevTicket)), up: mk(pctDelta(curTicket, prevTicket)) },
+    { ic:'users', label:'Clientes (mês)', val: String(curClientes), delta: deltaLabel(pctDelta(curClientes, prevClientes)), up: mk(pctDelta(curClientes, prevClientes)) },
   ];
 
-  const salesByMonth = [
-    { label:'Fev', value: 28400 },{ label:'Mar', value: 31200 },{ label:'Abr', value: 26900 },
-    { label:'Mai', value: 39800 },{ label:'Jun', value: 42500 },{ label:'Jul', value: 48250 },
-  ];
+  const salesByMonth = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    salesByMonth.push({ label: MONTH_LABELS[d.getMonth()], value: sum(ordersInMonth(monthKey(d.getTime()))) });
+  }
 
-  const catSplit = [
-    { label:'Geek', value: 24, color:'#FFC107' },{ label:'Funko', value: 20, color:'#121212' },
-    { label:'Organização', value: 16, color:'#7a7a7a' },{ label:'Casa', value: 14, color:'#e0a600' },
-    { label:'Outros', value: 26, color:'#dcdcdc' },
-  ];
+  const CAT_COLORS = ['#FFC107', '#121212', '#7a7a7a', '#e0a600', '#c9c9c9', '#8a6d00', '#4a4a4a', '#d4af37'];
+  const catTotals = {};
+  orders.filter(isCounted).forEach(o => (o.itemsDetail || []).forEach(it => {
+    const key = it.cat || 'outros';
+    catTotals[key] = (catTotals[key] || 0) + (it.price || 0);
+  }));
+  const catEntries = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+  const catSplit = catEntries.length
+    ? catEntries.map(([key, val], i) => ({ label: (CATEGORIES.find(c => c.slug === key) || { name: key }).name, value: val, color: CAT_COLORS[i % CAT_COLORS.length] }))
+    : [{ label: 'Sem vendas ainda', value: 1, color: '#e2e2e2' }];
 
-  const bestSellers = PRODUCTS.slice().sort((a,b)=>b.reviews-a.reviews).slice(0,5);
+  const salesByProduct = {};
+  orders.filter(isCounted).forEach(o => (o.itemsDetail || []).forEach(it => {
+    salesByProduct[it.id] = (salesByProduct[it.id] || 0) + (it.qty || 0);
+  }));
+  const bestSellers = PRODUCTS.slice()
+    .map(p => ({ ...p, vendas: salesByProduct[p.id] || 0 }))
+    .sort((a, b) => b.vendas - a.vendas)
+    .slice(0, 5);
 
-  const recentOrders = [
-    { id:'CB3D-482910', cliente:'Camila Souza', total:219.80, status:'entregue', date:'22/07' },
-    { id:'CB3D-482905', cliente:'Rafael Lima', total:89.90, status:'enviado', date:'22/07' },
-    { id:'CB3D-482899', cliente:'Juliana Prado', total:349.70, status:'processando', date:'21/07' },
-    { id:'CB3D-482874', cliente:'Diego Martins', total:129.90, status:'processando', date:'21/07' },
-    { id:'CB3D-482850', cliente:'Fernanda Alves', total:59.90, status:'entregue', date:'20/07' },
-  ];
-  const stMap = { entregue:'pill-green', enviado:'pill-blue', processando:'pill-gold', cancelado:'pill-red' };
+  const recentOrders = orders.slice(0, 5);
+  const stMap = { 'Entregue':'pill-green', 'Enviado':'pill-blue', 'Processando':'pill-gold', 'Aguardando Pagamento':'pill-gray', 'Cancelado':'pill-red' };
 
   c.innerHTML = `
     <div class="stat-grid">
       ${stats.map(s => `
         <div class="stat-card">
-          <div class="stat-top"><div class="stat-ic">${AICO[s.ic]}</div><span class="stat-delta ${s.up?'up':'down'}">${s.delta}</span></div>
+          <div class="stat-top"><div class="stat-ic">${AICO[s.ic]}</div><span class="stat-delta ${s.up}">${s.delta}</span></div>
           <div class="stat-val">${s.val}</div>
           <div class="stat-label">${s.label}</div>
         </div>`).join('')}
@@ -74,7 +108,7 @@
         <table class="admin-table">
           <thead><tr><th>Pedido</th><th>Cliente</th><th>Data</th><th>Status</th><th>Total</th></tr></thead>
           <tbody>
-            ${recentOrders.map(o => `<tr><td><strong>${o.id}</strong></td><td>${o.cliente}</td><td>${o.date}</td><td><span class="pill ${stMap[o.status]}">${o.status}</span></td><td>${formatBRL(o.total)}</td></tr>`).join('')}
+            ${recentOrders.length ? recentOrders.map(o => `<tr><td><strong>${o.id}</strong></td><td>${o.cliente}</td><td>${o.date}</td><td><span class="pill ${stMap[o.status]||'pill-gray'}">${o.status}</span></td><td>${formatBRL(o.total)}</td></tr>`).join('') : `<tr><td colspan="5" style="text-align:center;color:#999;padding:24px">Nenhum pedido ainda.</td></tr>`}
           </tbody>
         </table>
         <a href="pedidos.html" class="btn btn-ghost btn-sm" style="margin-top:14px">Ver Todos os Pedidos</a>
@@ -84,7 +118,7 @@
         ${bestSellers.map(p => `
           <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f2f2f2">
             <div class="admin-thumb">${iconFor(p.cat)}</div>
-            <div style="flex:1"><div style="font-size:13px;font-weight:600">${p.name}</div><div style="font-size:11.5px;color:#999">${p.reviews} vendas</div></div>
+            <div style="flex:1"><div style="font-size:13px;font-weight:600">${p.name}</div><div style="font-size:11.5px;color:#999">${p.vendas} vendas</div></div>
             <strong style="font-size:13px">${formatBRL(p.promo||p.price)}</strong>
           </div>`).join('')}
       </div>

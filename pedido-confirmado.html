@@ -64,6 +64,41 @@
       document.getElementById('statusIcon').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" style="width:44px;height:44px"><path d="M6 6l12 12M18 6L6 18"/></svg>';
     }
   }
+
+  /* ---------------- Envia o pedido para o Painel Admin ----------------
+     Protótipo sem banco de dados: o pedido fica salvo no localStorage
+     deste navegador/dispositivo, então só aparece no painel admin se for
+     acessado no MESMO navegador que fez a compra. Para pedidos reais de
+     clientes aparecerem no admin em qualquer dispositivo, é necessário um
+     banco de dados de verdade (ver docs/ARQUITETURA.md). */
+  (function syncOrderToAdmin(){
+    if (!orderCode && !order) return;
+    const STATUS_BY_MP = {
+      approved: 'Processando',
+      pending: 'Aguardando Pagamento',
+      in_process: 'Aguardando Pagamento',
+      rejected: 'Cancelado',
+      failure: 'Cancelado',
+    };
+    const status = STATUS_BY_MP[mpStatus] || 'Aguardando Pagamento';
+    const id = orderCode || (order && order.id);
+    if (!id) return;
+    let orders = [];
+    try { orders = JSON.parse(localStorage.getItem('cb3d_admin_orders')) || []; } catch (e) { orders = []; }
+    const dateObj = new Date((order && order.date) || Date.now());
+    const dateStr = isNaN(dateObj) ? '' : String(dateObj.getDate()).padStart(2,'0') + '/' + String(dateObj.getMonth()+1).padStart(2,'0') + '/' + dateObj.getFullYear();
+    const record = {
+      id,
+      cliente: (order && order.cliente) || 'Cliente',
+      date: dateStr,
+      total: (order && order.total) || 0,
+      status,
+      items: (order && order.items) || 1,
+    };
+    const existing = orders.find(o => o.id === id);
+    if (existing) { Object.assign(existing, record); } else { orders.unshift(record); }
+    localStorage.setItem('cb3d_admin_orders', JSON.stringify(orders));
+  })();
 </script>
 </body>
 </html>

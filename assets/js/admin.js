@@ -101,14 +101,11 @@ const AdminStore = {
     if (!localStorage.getItem('cb3d_admin_banners')) {
       localStorage.setItem('cb3d_admin_banners', JSON.stringify(BANNERS.map((b,i)=>({...b, id:'b'+i, active:true}))));
     }
+    // A lista de clientes ainda não é preenchida automaticamente a partir
+    // de compras reais (exigiria um banco de dados — ver docs/ARQUITETURA.md).
+    // Por isso começa vazia, em vez de mostrar clientes fictícios de demonstração.
     if (!localStorage.getItem('cb3d_admin_customers')) {
-      localStorage.setItem('cb3d_admin_customers', JSON.stringify([
-        { name:'Camila Souza', email:'camila@email.com', orders:5, total:890.40, since:'2025-03-12' },
-        { name:'Rafael Lima', email:'rafael@email.com', orders:2, total:219.80, since:'2025-08-02' },
-        { name:'Juliana Prado', email:'juliana@email.com', orders:8, total:1540.90, since:'2024-11-20' },
-        { name:'Diego Martins', email:'diego@email.com', orders:3, total:349.70, since:'2025-05-14' },
-        { name:'Fernanda Alves', email:'fernanda@email.com', orders:1, total:59.90, since:'2026-01-09' },
-      ]));
+      localStorage.setItem('cb3d_admin_customers', JSON.stringify([]));
     }
   },
   get(key){ this.seed(); try { return JSON.parse(localStorage.getItem('cb3d_admin_'+key)) || []; } catch(e){ return []; } },

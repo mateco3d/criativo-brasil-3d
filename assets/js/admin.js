@@ -42,7 +42,7 @@ function adminLayout(active, title, subtitle){
   document.body.classList.add('admin-body');
   const nav = NAV_ITEMS.map(g => `
     <div class="nav-label">${g.group}</div>
-    ${g.items.map(i => `<a href="${i.href}" class="${active===i.href?'active':''}">${AICO[i.ic]}<span>${i.label}</span></a>`).join('')}
+    ${g.items.map(i => `<a href="${i.href}" class="${active===i.href?'active':''}">${AICO[i.ic]}<span>${i.label}</span>${i.href==='pedidos.html'?'<span id="navOrdersBadge" class="nav-badge">0</span>':''}</a>`).join('')}
   `).join('');
 
   document.body.insertAdjacentHTML('afterbegin', `
@@ -66,6 +66,51 @@ function adminLayout(active, title, subtitle){
 
   const burger = document.getElementById('adminBurger');
   if (burger) burger.addEventListener('click', ()=> document.getElementById('adminSidebar').classList.toggle('open'));
+
+  // Aviso visual de pedido novo: verifica pedidos não vistos no banco de
+  // dados real (ver api/orders.js) e mostra um badge vermelho no menu
+  // "Pedidos". Atualiza a cada 20s enquanto o painel estiver aberto.
+  refreshOrderBadge();
+  setInterval(refreshOrderBadge, 20000);
+}
+
+/* ---------------- Pedidos reais (API + banco de dados Postgres) ----------------
+   Substitui o antigo mock via localStorage. As rotas /api/orders são
+   protegidas por HTTP Basic Auth (ver api/_auth.js e middleware.js); como
+   o navegador já autenticou para acessar a página /admin/*.html, o fetch
+   abaixo reaproveita a mesma credencial automaticamente. */
+async function fetchOrders(){
+  try {
+    const res = await fetch('/api/orders');
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.orders || []).map(o => ({
+      ...o,
+      total: Number(o.total) || 0,
+      subtotal: Number(o.subtotal) || 0,
+      shipping: Number(o.shipping) || 0,
+      discount: Number(o.discount) || 0,
+      itemsDetail: (o.itemsDetail || []).map(it => ({ ...it, price: Number(it.price) || 0, qty: Number(it.qty) || 0 })),
+    }));
+  } catch (e) { return []; }
+}
+async function updateOrderStatus(id, status){
+  try {
+    await fetch('/api/orders', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, status }) });
+  } catch (e) { /* falha silenciosa — o painel tenta de novo na próxima ação */ }
+}
+async function markOrdersSeen(){
+  try {
+    await fetch('/api/orders', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ markAllSeen:true }) });
+  } catch (e) {}
+}
+async function refreshOrderBadge(){
+  const badge = document.getElementById('navOrdersBadge');
+  if (!badge) return;
+  const orders = await fetchOrders();
+  const unseen = orders.filter(o => !o.seen).length;
+  badge.textContent = unseen > 99 ? '99+' : String(unseen);
+  badge.style.display = unseen > 0 ? 'inline-flex' : 'none';
 }
 
 function barChart(data, opts={}){

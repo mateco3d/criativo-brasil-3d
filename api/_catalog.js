@@ -38,6 +38,7 @@ const PRODUCTS = [
   { id: 'p22', name: 'Nome de Mesa Personalizado 3D', price: 74.9, promo: null },
   { id: 'p23', name: 'Topo de Bolo Personalizado', price: 59.9, promo: 49.9 },
   { id: 'p24', name: 'Chaveiro Personalizado com Logo', price: 24.9, promo: null },
+  { id: 'p1785468431596', name: 'produto teste', price: 5, promo: null },
 ];
 
 // Precisa ser igual ao objeto COUPONS em carrinho.html

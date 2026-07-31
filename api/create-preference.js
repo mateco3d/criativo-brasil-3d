@@ -15,6 +15,7 @@
 =================================================================== */
 
 const { getProduct, unitPrice, calcShipping, COUPONS, round2 } = require('./_catalog');
+const { sql, ensureSchema } = require('./_db');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -111,6 +112,30 @@ module.exports = async function handler(req, res) {
       res.status(mpRes.status).json({ error: data.message || 'Erro ao criar preferência no Mercado Pago.', details: data });
       return;
     }
+
+    // 5) Salva o pedido no banco de dados (status inicial: aguardando
+    //    pagamento). O webhook (api/mp-webhook.js) atualiza o status
+    //    quando o Mercado Pago confirmar o pagamento. Se o banco falhar
+    //    por algum motivo, não bloqueia a compra — só loga o erro.
+    try {
+      await ensureSchema();
+      await sql`
+        INSERT INTO orders (id, cliente, email, telefone, total, subtotal, shipping, discount, status, mp_preference_id)
+        VALUES (${orderCode}, ${payer.name || null}, ${payer.email || null}, ${payer.phone || null},
+                ${total}, ${subtotal}, ${shipping.price}, ${round2(subtotal * discountRatio)},
+                'Aguardando Pagamento', ${data.id})
+        ON CONFLICT (id) DO NOTHING
+      `;
+      for (const l of lines) {
+        await sql`
+          INSERT INTO order_items (order_id, product_id, name, cat, qty, price)
+          VALUES (${orderCode}, ${l.product.id}, ${l.product.name}, ${l.product.cat || null}, ${l.qty}, ${round2(l.unit * l.qty * (1 - discountRatio))})
+        `;
+      }
+    } catch (dbErr) {
+      console.log('Falha ao salvar pedido no banco de dados:', dbErr);
+    }
+
     res.status(200).json({
       orderCode,
       total,

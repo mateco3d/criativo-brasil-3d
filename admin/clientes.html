@@ -17,11 +17,39 @@
 <script>
   adminLayout('clientes.html', 'Clientes', 'Base de clientes cadastrados na loja');
   const c = document.getElementById('adminContent');
-  AdminStore.seed();
+  c.innerHTML = `
+    <div class="admin-panel">
+      <div class="admin-toolbar">
+        <div class="admin-search">${AICO.search}<input type="text" id="searchCust" placeholder="Buscar cliente..."></div>
+      </div>
+      <table class="admin-table">
+        <thead><tr><th>Cliente</th><th>E-mail</th><th>Pedidos</th><th>Total Gasto</th><th>Cliente desde</th><th>Ações</th></tr></thead>
+        <tbody id="custTbody"><tr><td colspan="6" style="text-align:center;color:#999;padding:30px">Carregando clientes...</td></tr></tbody>
+      </table>
+    </div>`;
+
+  // Clientes reais são derivados dos pedidos feitos pelo checkout — sem
+  // cadastro de conta separado, cada e-mail único que já comprou vira um
+  // "cliente" aqui, com total gasto e nº de pedidos somados automaticamente.
+  let customers = [];
+  function buildCustomers(orders){
+    const byEmail = {};
+    orders.filter(o => o.status !== 'Cancelado').forEach(o => {
+      const key = (o.email || o.cliente || 'sem-email').toLowerCase();
+      if (!byEmail[key]) {
+        byEmail[key] = { name: o.cliente || 'Cliente', email: o.email || '—', orders: 0, total: 0, since: o.created_at };
+      }
+      const cu = byEmail[key];
+      cu.orders += 1;
+      cu.total += o.total || 0;
+      if (new Date(o.created_at) < new Date(cu.since)) cu.since = o.created_at;
+    });
+    return Object.values(byEmail).sort((a,b) => b.total - a.total);
+  }
 
   function render(q){
-    const customers = AdminStore.get('customers').filter(cu => !q || cu.name.toLowerCase().includes(q.toLowerCase()) || cu.email.toLowerCase().includes(q.toLowerCase()));
-    document.getElementById('custTbody').innerHTML = customers.map(cu => `
+    const filtered = customers.filter(cu => !q || cu.name.toLowerCase().includes(q.toLowerCase()) || cu.email.toLowerCase().includes(q.toLowerCase()));
+    document.getElementById('custTbody').innerHTML = filtered.map(cu => `
       <tr>
         <td><div style="display:flex;align-items:center;gap:10px"><div class="review-avatar" style="width:34px;height:34px;font-size:11px">${cu.name.split(' ').map(n=>n[0]).slice(0,2).join('')}</div><strong>${cu.name}</strong></div></td>
         <td>${cu.email}</td>
@@ -32,18 +60,12 @@
       </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:#999;padding:30px">Nenhum cliente encontrado.</td></tr>`;
   }
 
-  c.innerHTML = `
-    <div class="admin-panel">
-      <div class="admin-toolbar">
-        <div class="admin-search">${AICO.search}<input type="text" id="searchCust" placeholder="Buscar cliente..."></div>
-      </div>
-      <table class="admin-table">
-        <thead><tr><th>Cliente</th><th>E-mail</th><th>Pedidos</th><th>Total Gasto</th><th>Cliente desde</th><th>Ações</th></tr></thead>
-        <tbody id="custTbody"></tbody>
-      </table>
-    </div>`;
-  document.getElementById('searchCust').addEventListener('input', e => render(e.target.value));
-  render('');
+  (async function init(){
+    const orders = await fetchOrders();
+    customers = buildCustomers(orders);
+    render('');
+    document.getElementById('searchCust').addEventListener('input', e => render(e.target.value));
+  })();
 </script>
 </body>
 </html>

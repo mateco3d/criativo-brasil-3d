@@ -21,22 +21,29 @@
   const STATUS = ['Aguardando Pagamento','Processando','Enviado','Entregue','Cancelado'];
   const stPill = { 'Aguardando Pagamento':'pill-gray','Processando':'pill-gold','Enviado':'pill-blue','Entregue':'pill-green','Cancelado':'pill-red' };
 
-  // Pedidos reais são registrados aqui automaticamente quando um cliente
-  // finaliza uma compra pelo checkout (ver pedido-confirmado.html). Sem
-  // banco de dados ainda, só aparecem os pedidos feitos NESTE navegador.
-  if (!localStorage.getItem('cb3d_admin_orders')) {
-    localStorage.setItem('cb3d_admin_orders', JSON.stringify([]));
+  // Pedidos reais, vindos do banco de dados (Postgres/Neon) via /api/orders.
+  // Cada pedido feito pelo checkout do site (qualquer cliente, qualquer
+  // navegador/dispositivo) aparece aqui automaticamente.
+  let allOrders = [];
+
+  function fmtDate(iso){
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d)) return '—';
+    return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
   }
 
   function render(filter){
-    let orders = JSON.parse(localStorage.getItem('cb3d_admin_orders')||'[]');
+    let orders = allOrders;
     if (filter) orders = orders.filter(o => o.status === filter);
-    document.getElementById('ordTbody').innerHTML = orders.map((o,i) => `
+    document.getElementById('ordTbody').innerHTML = orders.map((o) => {
+      const itemCount = (o.itemsDetail||[]).reduce((n,it)=>n+(it.qty||0),0) || 1;
+      return `
       <tr>
         <td><strong>${o.id}</strong></td>
-        <td>${o.cliente}</td>
-        <td>${o.date}</td>
-        <td>${o.items} itens</td>
+        <td>${o.cliente || 'Cliente'}</td>
+        <td>${fmtDate(o.created_at)}</td>
+        <td>${itemCount} itens</td>
         <td>${formatBRL(o.total)}</td>
         <td>
           <select onchange="changeStatus('${o.id}', this.value)" style="border:none;background:transparent;font-size:12px;font-weight:700" class="pill ${stPill[o.status]}">
@@ -45,18 +52,26 @@
         </td>
         <td>
           <div class="row-actions">
-            <button title="Ver detalhes" onclick="alert('Pedido ${o.id}\\nCliente: ${o.cliente}\\nTotal: ${formatBRL(o.total)}')">${AICO.eye}</button>
-            <button title="Emitir etiqueta" onclick="alert('Etiqueta de envio gerada para o pedido ${o.id} (integração Correios).')">${AICO.print}</button>
+            <button title="Ver detalhes" onclick="verDetalhes('${o.id}')">${AICO.eye}</button>
+            <button title="Emitir etiqueta" onclick="alert('A emissão de etiqueta e envio pelos Correios ainda não está integrada — combinado com você, isso fica para uma próxima etapa.')">${AICO.print}</button>
           </div>
         </td>
-      </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:#999;padding:30px">Nenhum pedido encontrado.</td></tr>`;
+      </tr>`;
+    }).join('') || `<tr><td colspan="7" style="text-align:center;color:#999;padding:30px">Nenhum pedido encontrado.</td></tr>`;
   }
-  function changeStatus(id, status){
-    const orders = JSON.parse(localStorage.getItem('cb3d_admin_orders')||'[]');
-    const o = orders.find(x=>x.id===id); if (o) o.status = status;
-    localStorage.setItem('cb3d_admin_orders', JSON.stringify(orders));
+  function verDetalhes(id){
+    const o = allOrders.find(x=>x.id===id);
+    if (!o) return;
+    const itens = (o.itemsDetail||[]).map(it => `${it.qty}x ${it.name}`).join('\n') || '—';
+    alert(`Pedido ${o.id}\nCliente: ${o.cliente||'—'} (${o.email||'—'})\nTelefone: ${o.telefone||'—'}\nStatus: ${o.status}\nTotal: ${formatBRL(o.total)}\n\nItens:\n${itens}`);
+  }
+  async function changeStatus(id, status){
+    const o = allOrders.find(x=>x.id===id); if (o) o.status = status;
     render(document.getElementById('statusFilter').value);
+    await updateOrderStatus(id, status);
   }
+  window.changeStatus = changeStatus;
+  window.verDetalhes = verDetalhes;
 
   c.innerHTML = `
     <div class="admin-panel">
@@ -70,11 +85,17 @@
       <div style="overflow-x:auto">
         <table class="admin-table">
           <thead><tr><th>Pedido</th><th>Cliente</th><th>Data</th><th>Itens</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
-          <tbody id="ordTbody"></tbody>
+          <tbody id="ordTbody"><tr><td colspan="7" style="text-align:center;color:#999;padding:30px">Carregando pedidos...</td></tr></tbody>
         </table>
       </div>
     </div>`;
-  render('');
+
+  (async function init(){
+    allOrders = await fetchOrders();
+    render('');
+    await markOrdersSeen();
+    refreshOrderBadge();
+  })();
 </script>
 </body>
 </html>

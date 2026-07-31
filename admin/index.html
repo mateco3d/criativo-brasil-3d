@@ -17,113 +17,115 @@
 <script>
   adminLayout('index.html', 'Dashboard', 'Visão geral do desempenho da loja');
   const c = document.getElementById('adminContent');
+  c.innerHTML = `<div style="text-align:center;color:#999;padding:60px 0">Carregando dados...</div>`;
 
   /* ---------------- Dashboard calculado a partir de pedidos reais ----------------
-     Antes, todos os números aqui eram fixos/fictícios. Agora tudo é calculado
-     em cima de cb3d_admin_orders (pedidos reais feitos pelo checkout — ver
-     pedido-confirmado.html), então o dashboard atualiza sozinho a cada novo
-     pedido. Limitação do protótipo: só enxerga pedidos feitos NESTE navegador
-     (sem banco de dados ainda — ver docs/ARQUITETURA.md). */
-  let orders = [];
-  try { orders = JSON.parse(localStorage.getItem('cb3d_admin_orders')) || []; } catch (e) { orders = []; }
-  const isCounted = o => o.status !== 'Cancelado';
+     Os números vêm do banco de dados real (Postgres/Neon) via /api/orders —
+     ou seja, contam pedidos feitos por qualquer cliente, em qualquer
+     dispositivo, não só neste navegador. */
+  (async function init(){
+    const orders = await fetchOrders();
+    const isCounted = o => o.status !== 'Cancelado';
 
-  const MONTH_LABELS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const now = new Date();
-  const monthKey = ts => { const d = new Date(ts); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
-  const ordersInMonth = key => orders.filter(o => isCounted(o) && o.ts && monthKey(o.ts) === key);
-  const sum = list => list.reduce((s, o) => s + (o.total || 0), 0);
-  const pctDelta = (cur, prev) => (prev ? ((cur - prev) / prev) * 100 : null);
-  const deltaLabel = d => (d === null || !isFinite(d)) ? '—' : (d >= 0 ? '+' : '') + d.toFixed(0) + '%';
+    const MONTH_LABELS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const now = new Date();
+    const monthKey = ts => { const d = new Date(ts); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+    const orderTs = o => new Date(o.created_at).getTime();
+    const ordersInMonth = key => orders.filter(o => isCounted(o) && o.created_at && monthKey(orderTs(o)) === key);
+    const sum = list => list.reduce((s, o) => s + (o.total || 0), 0);
+    const pctDelta = (cur, prev) => (prev ? ((cur - prev) / prev) * 100 : null);
+    const deltaLabel = d => (d === null || !isFinite(d)) ? '—' : (d >= 0 ? '+' : '') + d.toFixed(0) + '%';
 
-  const curKey = monthKey(now.getTime());
-  const prevKey = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime());
-  const curOrders = ordersInMonth(curKey), prevOrders = ordersInMonth(prevKey);
-  const curFat = sum(curOrders), prevFat = sum(prevOrders);
-  const curPedidos = curOrders.length, prevPedidos = prevOrders.length;
-  const curTicket = curPedidos ? curFat / curPedidos : 0, prevTicket = prevPedidos ? prevFat / prevPedidos : 0;
-  const curClientes = new Set(curOrders.map(o => o.cliente)).size, prevClientes = new Set(prevOrders.map(o => o.cliente)).size;
+    const curKey = monthKey(now.getTime());
+    const prevKey = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime());
+    const curOrders = ordersInMonth(curKey), prevOrders = ordersInMonth(prevKey);
+    const curFat = sum(curOrders), prevFat = sum(prevOrders);
+    const curPedidos = curOrders.length, prevPedidos = prevOrders.length;
+    const curTicket = curPedidos ? curFat / curPedidos : 0, prevTicket = prevPedidos ? prevFat / prevPedidos : 0;
+    const curClientes = new Set(curOrders.map(o => o.email || o.cliente)).size, prevClientes = new Set(prevOrders.map(o => o.email || o.cliente)).size;
 
-  const mk = d => d === null ? '' : (d >= 0 ? 'up' : 'down');
-  const stats = [
-    { ic:'money', label:'Faturamento (mês)', val: formatBRL(curFat), delta: deltaLabel(pctDelta(curFat, prevFat)), up: mk(pctDelta(curFat, prevFat)) },
-    { ic:'cart', label:'Pedidos (mês)', val: String(curPedidos), delta: deltaLabel(pctDelta(curPedidos, prevPedidos)), up: mk(pctDelta(curPedidos, prevPedidos)) },
-    { ic:'bag', label:'Ticket Médio', val: formatBRL(curTicket), delta: deltaLabel(pctDelta(curTicket, prevTicket)), up: mk(pctDelta(curTicket, prevTicket)) },
-    { ic:'users', label:'Clientes (mês)', val: String(curClientes), delta: deltaLabel(pctDelta(curClientes, prevClientes)), up: mk(pctDelta(curClientes, prevClientes)) },
-  ];
+    const mk = d => d === null ? '' : (d >= 0 ? 'up' : 'down');
+    const stats = [
+      { ic:'money', label:'Faturamento (mês)', val: formatBRL(curFat), delta: deltaLabel(pctDelta(curFat, prevFat)), up: mk(pctDelta(curFat, prevFat)) },
+      { ic:'cart', label:'Pedidos (mês)', val: String(curPedidos), delta: deltaLabel(pctDelta(curPedidos, prevPedidos)), up: mk(pctDelta(curPedidos, prevPedidos)) },
+      { ic:'bag', label:'Ticket Médio', val: formatBRL(curTicket), delta: deltaLabel(pctDelta(curTicket, prevTicket)), up: mk(pctDelta(curTicket, prevTicket)) },
+      { ic:'users', label:'Clientes (mês)', val: String(curClientes), delta: deltaLabel(pctDelta(curClientes, prevClientes)), up: mk(pctDelta(curClientes, prevClientes)) },
+    ];
 
-  const salesByMonth = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    salesByMonth.push({ label: MONTH_LABELS[d.getMonth()], value: sum(ordersInMonth(monthKey(d.getTime()))) });
-  }
+    const salesByMonth = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      salesByMonth.push({ label: MONTH_LABELS[d.getMonth()], value: sum(ordersInMonth(monthKey(d.getTime()))) });
+    }
 
-  const CAT_COLORS = ['#FFC107', '#121212', '#7a7a7a', '#e0a600', '#c9c9c9', '#8a6d00', '#4a4a4a', '#d4af37'];
-  const catTotals = {};
-  orders.filter(isCounted).forEach(o => (o.itemsDetail || []).forEach(it => {
-    const key = it.cat || 'outros';
-    catTotals[key] = (catTotals[key] || 0) + (it.price || 0);
-  }));
-  const catEntries = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
-  const catSplit = catEntries.length
-    ? catEntries.map(([key, val], i) => ({ label: (CATEGORIES.find(c => c.slug === key) || { name: key }).name, value: val, color: CAT_COLORS[i % CAT_COLORS.length] }))
-    : [{ label: 'Sem vendas ainda', value: 1, color: '#e2e2e2' }];
+    const CAT_COLORS = ['#FFC107', '#121212', '#7a7a7a', '#e0a600', '#c9c9c9', '#8a6d00', '#4a4a4a', '#d4af37'];
+    const catTotals = {};
+    orders.filter(isCounted).forEach(o => (o.itemsDetail || []).forEach(it => {
+      const key = it.cat || 'outros';
+      catTotals[key] = (catTotals[key] || 0) + (it.price || 0);
+    }));
+    const catEntries = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+    const catSplit = catEntries.length
+      ? catEntries.map(([key, val], i) => ({ label: (CATEGORIES.find(c => c.slug === key) || { name: key }).name, value: val, color: CAT_COLORS[i % CAT_COLORS.length] }))
+      : [{ label: 'Sem vendas ainda', value: 1, color: '#e2e2e2' }];
 
-  const salesByProduct = {};
-  orders.filter(isCounted).forEach(o => (o.itemsDetail || []).forEach(it => {
-    salesByProduct[it.id] = (salesByProduct[it.id] || 0) + (it.qty || 0);
-  }));
-  const bestSellers = PRODUCTS.slice()
-    .map(p => ({ ...p, vendas: salesByProduct[p.id] || 0 }))
-    .sort((a, b) => b.vendas - a.vendas)
-    .slice(0, 5);
+    const salesByProduct = {};
+    orders.filter(isCounted).forEach(o => (o.itemsDetail || []).forEach(it => {
+      salesByProduct[it.product_id] = (salesByProduct[it.product_id] || 0) + (it.qty || 0);
+    }));
+    const bestSellers = PRODUCTS.slice()
+      .map(p => ({ ...p, vendas: salesByProduct[p.id] || 0 }))
+      .sort((a, b) => b.vendas - a.vendas)
+      .slice(0, 5);
 
-  const recentOrders = orders.slice(0, 5);
-  const stMap = { 'Entregue':'pill-green', 'Enviado':'pill-blue', 'Processando':'pill-gold', 'Aguardando Pagamento':'pill-gray', 'Cancelado':'pill-red' };
+    const recentOrders = orders.slice(0, 5);
+    const stMap = { 'Entregue':'pill-green', 'Enviado':'pill-blue', 'Processando':'pill-gold', 'Aguardando Pagamento':'pill-gray', 'Cancelado':'pill-red' };
+    const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '—' : String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); };
 
-  c.innerHTML = `
-    <div class="stat-grid">
-      ${stats.map(s => `
-        <div class="stat-card">
-          <div class="stat-top"><div class="stat-ic">${AICO[s.ic]}</div><span class="stat-delta ${s.up}">${s.delta}</span></div>
-          <div class="stat-val">${s.val}</div>
-          <div class="stat-label">${s.label}</div>
-        </div>`).join('')}
-    </div>
-
-    <div class="admin-grid-2">
-      <div class="admin-panel">
-        <h3>Faturamento por Período (últimos 6 meses)</h3>
-        ${barChart(salesByMonth, { fmt: v => 'R$ '+(v/1000).toFixed(1)+'k' })}
-      </div>
-      <div class="admin-panel">
-        <h3>Vendas por Categoria</h3>
-        ${donutChart(catSplit)}
-      </div>
-    </div>
-
-    <div class="admin-grid-2">
-      <div class="admin-panel">
-        <h3>Pedidos Recentes</h3>
-        <table class="admin-table">
-          <thead><tr><th>Pedido</th><th>Cliente</th><th>Data</th><th>Status</th><th>Total</th></tr></thead>
-          <tbody>
-            ${recentOrders.length ? recentOrders.map(o => `<tr><td><strong>${o.id}</strong></td><td>${o.cliente}</td><td>${o.date}</td><td><span class="pill ${stMap[o.status]||'pill-gray'}">${o.status}</span></td><td>${formatBRL(o.total)}</td></tr>`).join('') : `<tr><td colspan="5" style="text-align:center;color:#999;padding:24px">Nenhum pedido ainda.</td></tr>`}
-          </tbody>
-        </table>
-        <a href="pedidos.html" class="btn btn-ghost btn-sm" style="margin-top:14px">Ver Todos os Pedidos</a>
-      </div>
-      <div class="admin-panel">
-        <h3>Produtos Mais Vendidos</h3>
-        ${bestSellers.map(p => `
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f2f2f2">
-            <div class="admin-thumb">${iconFor(p.cat)}</div>
-            <div style="flex:1"><div style="font-size:13px;font-weight:600">${p.name}</div><div style="font-size:11.5px;color:#999">${p.vendas} vendas</div></div>
-            <strong style="font-size:13px">${formatBRL(p.promo||p.price)}</strong>
+    c.innerHTML = `
+      <div class="stat-grid">
+        ${stats.map(s => `
+          <div class="stat-card">
+            <div class="stat-top"><div class="stat-ic">${AICO[s.ic]}</div><span class="stat-delta ${s.up}">${s.delta}</span></div>
+            <div class="stat-val">${s.val}</div>
+            <div class="stat-label">${s.label}</div>
           </div>`).join('')}
       </div>
-    </div>
-  `;
+
+      <div class="admin-grid-2">
+        <div class="admin-panel">
+          <h3>Faturamento por Período (últimos 6 meses)</h3>
+          ${barChart(salesByMonth, { fmt: v => 'R$ '+(v/1000).toFixed(1)+'k' })}
+        </div>
+        <div class="admin-panel">
+          <h3>Vendas por Categoria</h3>
+          ${donutChart(catSplit)}
+        </div>
+      </div>
+
+      <div class="admin-grid-2">
+        <div class="admin-panel">
+          <h3>Pedidos Recentes</h3>
+          <table class="admin-table">
+            <thead><tr><th>Pedido</th><th>Cliente</th><th>Data</th><th>Status</th><th>Total</th></tr></thead>
+            <tbody>
+              ${recentOrders.length ? recentOrders.map(o => `<tr><td><strong>${o.id}</strong></td><td>${o.cliente||'Cliente'}</td><td>${fmtDate(o.created_at)}</td><td><span class="pill ${stMap[o.status]||'pill-gray'}">${o.status}</span></td><td>${formatBRL(o.total)}</td></tr>`).join('') : `<tr><td colspan="5" style="text-align:center;color:#999;padding:24px">Nenhum pedido ainda.</td></tr>`}
+            </tbody>
+          </table>
+          <a href="pedidos.html" class="btn btn-ghost btn-sm" style="margin-top:14px">Ver Todos os Pedidos</a>
+        </div>
+        <div class="admin-panel">
+          <h3>Produtos Mais Vendidos</h3>
+          ${bestSellers.map(p => `
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f2f2f2">
+              <div class="admin-thumb">${iconFor(p.cat)}</div>
+              <div style="flex:1"><div style="font-size:13px;font-weight:600">${p.name}</div><div style="font-size:11.5px;color:#999">${p.vendas} vendas</div></div>
+              <strong style="font-size:13px">${formatBRL(p.promo||p.price)}</strong>
+            </div>`).join('')}
+        </div>
+      </div>
+    `;
+  })();
 </script>
 </body>
 </html>

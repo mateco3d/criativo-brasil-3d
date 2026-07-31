@@ -65,42 +65,11 @@
     }
   }
 
-  /* ---------------- Envia o pedido para o Painel Admin ----------------
-     Protótipo sem banco de dados: o pedido fica salvo no localStorage
-     deste navegador/dispositivo, então só aparece no painel admin se for
-     acessado no MESMO navegador que fez a compra. Para pedidos reais de
-     clientes aparecerem no admin em qualquer dispositivo, é necessário um
-     banco de dados de verdade (ver docs/ARQUITETURA.md). */
-  (function syncOrderToAdmin(){
-    if (!orderCode && !order) return;
-    const STATUS_BY_MP = {
-      approved: 'Processando',
-      pending: 'Aguardando Pagamento',
-      in_process: 'Aguardando Pagamento',
-      rejected: 'Cancelado',
-      failure: 'Cancelado',
-    };
-    const status = STATUS_BY_MP[mpStatus] || 'Aguardando Pagamento';
-    const id = orderCode || (order && order.id);
-    if (!id) return;
-    let orders = [];
-    try { orders = JSON.parse(localStorage.getItem('cb3d_admin_orders')) || []; } catch (e) { orders = []; }
-    const dateObj = new Date((order && order.date) || Date.now());
-    const dateStr = isNaN(dateObj) ? '' : String(dateObj.getDate()).padStart(2,'0') + '/' + String(dateObj.getMonth()+1).padStart(2,'0') + '/' + dateObj.getFullYear();
-    const record = {
-      id,
-      cliente: (order && order.cliente) || 'Cliente',
-      date: dateStr,
-      ts: isNaN(dateObj) ? Date.now() : dateObj.getTime(),
-      total: (order && order.total) || 0,
-      status,
-      items: (order && order.items) || 1,
-      itemsDetail: (order && order.itemsDetail) || [],
-    };
-    const existing = orders.find(o => o.id === id);
-    if (existing) { Object.assign(existing, record); } else { orders.unshift(record); }
-    localStorage.setItem('cb3d_admin_orders', JSON.stringify(orders));
-  })();
+  // O pedido já é salvo no banco de dados real pelo servidor (veja
+  // api/create-preference.js e api/mp-webhook.js) assim que a preferência de
+  // pagamento é criada e quando o Mercado Pago confirma o status — por isso
+  // não é mais necessário replicar nada aqui no navegador para o pedido
+  // aparecer no painel admin.
 </script>
 </body>
 </html>

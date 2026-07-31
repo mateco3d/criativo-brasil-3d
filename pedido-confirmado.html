@@ -25,8 +25,9 @@
     </div>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
       <a href="minha-conta.html?tab=pedidos" class="btn btn-outline">Ver Meus Pedidos</a>
-      <a href="produtos.html" class="btn btn-gold">Continuar Comprando</a>
+      <a href="produtos.html" class="btn btn-gold" id="ctaSecundario">Continuar Comprando</a>
     </div>
+    <p id="carrinhoMantidoMsg" style="display:none;color:var(--gray-500);margin-top:16px;font-size:13.5px">Seus itens continuam salvos no carrinho — é só voltar e concluir o pagamento quando quiser.</p>
   </div>
 </section>
 <div id="site-footer"></div>
@@ -70,6 +71,27 @@
   // pagamento é criada e quando o Mercado Pago confirma o status — por isso
   // não é mais necessário replicar nada aqui no navegador para o pedido
   // aparecer no painel admin.
+
+  /* ---------------- Carrinho só é esvaziado quando o pagamento é aprovado ----------------
+     Antes, o carrinho era limpo assim que o cliente clicava em "Finalizar
+     Compra" (ainda no checkout.html), mesmo que o pagamento não fosse
+     concluído. Resultado: se o Pix não era pago, o boleto não compensava ou
+     o cliente simplesmente fechava a aba do Mercado Pago, os produtos
+     desapareciam do carrinho — obrigando a montar tudo de novo para tentar
+     pagar outra vez. Agora só limpamos o carrinho aqui, e só quando o
+     Mercado Pago confirma o pagamento como aprovado. */
+  if (mpStatus === 'approved') {
+    localStorage.removeItem('cb3d_coupon');
+    Cart.clear();
+  } else if (mpStatus) {
+    // Pendente, em análise, recusado ou não concluído: mantém o carrinho
+    // intacto e troca o botão secundário para levar direto de volta ao
+    // checkout, já que os itens continuam lá.
+    const cta = document.getElementById('ctaSecundario');
+    if (cta) { cta.textContent = 'Concluir Pagamento'; cta.href = 'checkout.html'; }
+    const msg = document.getElementById('carrinhoMantidoMsg');
+    if (msg) msg.style.display = 'block';
+  }
 </script>
 </body>
 </html>

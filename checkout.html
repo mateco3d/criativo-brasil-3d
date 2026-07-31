@@ -239,8 +239,11 @@
         items: linesSnapshot.reduce((n, l) => n + l.qty, 0),
         itemsDetail: linesSnapshot,
       }));
-      localStorage.removeItem('cb3d_coupon');
-      Cart.clear();
+      // Importante: o carrinho só é esvaziado depois que o pagamento é
+      // confirmado como aprovado (ver pedido-confirmado.html). Assim, se o
+      // cliente gerar o pagamento mas não concluir (Pix não pago, boleto
+      // não compensado, aba fechada, etc.), os itens continuam no
+      // carrinho e ele pode voltar e tentar pagar de novo sem perder nada.
       location.href = data.init_point;
     } catch (err) {
       showToast('Erro de conexão', 'Não foi possível falar com o servidor de pagamento.');

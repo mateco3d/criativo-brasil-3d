@@ -58,7 +58,7 @@ function adminLayout(active, title, subtitle){
             <button class="btn-icon admin-burger" id="adminBurger">${AICO.menu}</button>
             <div><h1>${title}</h1><p>${subtitle||''}</p></div>
           </div>
-          <div class="admin-profile"><div class="av">AD</div><div><div style="font-size:12.5px;font-weight:700">Administrador</div><div style="font-size:11px;color:#999">admin@criativobrasil3d.com.br</div></div></div>
+          <div class="admin-profile"><div class="av">AD</div><div><div style="font-size:12.5px;font-weight:700">Administrador</div><div style="font-size:11px;color:#999">criativo3dbrasil@gmail.com</div></div></div>
         </div>
         <div id="adminContent"></div>
       </main>

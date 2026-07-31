@@ -148,7 +148,7 @@ function footerHTML(){
         <ul class="footer-contact">
           <li>${ICO.pin}<span>São Paulo, SP — Envios para todo o Brasil</span></li>
           <li>${ICO.phone}<span>(11) 91234-5678</span></li>
-          <li>${ICO.mail}<span>contato@criativobrasil3d.com.br</span></li>
+          <li>${ICO.mail}<span><a href="mailto:criativo3dbrasil@gmail.com" style="color:inherit">criativo3dbrasil@gmail.com</a></span></li>
         </ul>
       </div>
     </div>

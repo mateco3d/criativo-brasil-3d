@@ -156,8 +156,19 @@
       document.getElementById('cidadeInput').value = addr.localidade;
       document.getElementById('ufInput').value = addr.uf;
       document.getElementById('cepStatus').textContent = `Endereço encontrado: ${addr.bairro}, ${addr.localidade}/${addr.uf}`;
-      document.getElementById('shippingOptions').innerHTML = '<p style="font-size:13px;color:var(--gray-500)">Calculando frete...</p>';
-      const options = await calcularFrete(cep, Cart.subtotal());
+      document.getElementById('shippingOptions').innerHTML = '<p style="font-size:13px;color:var(--gray-500)">Calculando frete com os Correios...</p>';
+      const items = Cart.lines().map(l => ({ id: l.id, qty: l.qty }));
+      const options = await calcularFrete(cep, items);
+      if (!options.length){
+        selectedShipping = null;
+        document.getElementById('shippingOptions').innerHTML = `
+          <p style="font-size:13px;color:var(--red)">Não foi possível calcular o frete para este CEP agora.</p>
+          <button type="button" class="btn btn-outline btn-sm" id="retryFreteBtn">Tentar novamente</button>`;
+        document.getElementById('coFrete').textContent = 'A calcular';
+        const retryBtn = document.getElementById('retryFreteBtn');
+        if (retryBtn) retryBtn.addEventListener('click', () => cepInput.dispatchEvent(new Event('blur')));
+        return;
+      }
       document.getElementById('shippingOptions').innerHTML = options.map((o,i) => `
         <label class="shipping-opt ${i===0?'selected':''}" data-idx="${i}">
           <div style="display:flex;align-items:center;gap:12px">

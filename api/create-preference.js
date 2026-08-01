@@ -14,7 +14,8 @@
    código/GitHub.
 =================================================================== */
 
-const { getProduct, unitPrice, calcShipping, COUPONS, round2 } = require('./_catalog');
+const { getProduct, unitPrice, COUPONS, round2 } = require('./_catalog');
+const { calcularFreteMelhorEnvio } = require('./_shipping');
 const { sql, ensureSchema } = require('./_db');
 
 module.exports = async function handler(req, res) {
@@ -61,9 +62,26 @@ module.exports = async function handler(req, res) {
     if (COUPONS[code]) { discountRatio = COUPONS[code]; couponApplied = code; }
   }
 
-  // 3) Frete (mesma fórmula determinística do front-end, recalculada aqui)
-  const shippingCode = ['PAC', 'SEDEX', 'TRANSP'].includes(body.shippingCode) ? body.shippingCode : 'PAC';
-  const shipping = body.cep ? calcShipping(body.cep, subtotal, shippingCode) : { label: 'A combinar', price: 0 };
+  // 3) Frete real (Melhor Envio), recalculado aqui — nunca confiamos no
+  //    valor/opção que o navegador manda, só usamos o "código" da opção
+  //    escolhida para saber qual transportadora o cliente selecionou.
+  let shipping = { label: 'A combinar', price: 0 };
+  if (body.cep) {
+    let shippingOptions;
+    try {
+      shippingOptions = await calcularFreteMelhorEnvio({ cepDestino: body.cep, lines });
+    } catch (err) {
+      console.log('Erro ao calcular frete (Melhor Envio) na criação do pedido:', err);
+      res.status(502).json({ error: 'Não foi possível confirmar o valor do frete agora. Tente novamente em instantes.' });
+      return;
+    }
+    const chosen = shippingOptions.find((o) => o.code === String(body.shippingCode)) || shippingOptions[0];
+    if (!chosen) {
+      res.status(400).json({ error: 'Nenhuma opção de frete disponível para o CEP informado.' });
+      return;
+    }
+    shipping = { label: chosen.label, price: chosen.price };
+  }
 
   // 4) Monta os itens do Mercado Pago (desconto aplicado proporcionalmente
   //    no preço unitário, para evitar itens com valor negativo)

@@ -436,30 +436,41 @@ function toggleFav(btn, id){
   showToast(active ? 'Adicionado aos favoritos' : 'Removido dos favoritos', getProduct(id).name);
 }
 
-/* ---------------- CEP / Frete (mock Correios) ---------------- */
+/* ---------------- CEP / Frete (Correios reais via ViaCEP + Melhor Envio) ---------------- */
+// Busca o endereço a partir do CEP usando a ViaCEP — API pública e
+// gratuita dos Correios, sem necessidade de conta nem chave de API.
 async function consultarCEP(cep){
   cep = cep.replace(/\D/g,'');
   if (cep.length !== 8) return null;
-  // Mock determinístico baseado no CEP (simula resposta dos Correios / ViaCEP)
-  const seed = parseInt(cep.slice(0,3),10);
-  const ufs = ['SP','RJ','MG','PR','RS','BA','SC','PE','CE','DF'];
-  const cidades = ['São Paulo','Rio de Janeiro','Belo Horizonte','Curitiba','Porto Alegre','Salvador','Florianópolis','Recife','Fortaleza','Brasília'];
-  const i = seed % ufs.length;
-  await new Promise(r=>setTimeout(r, 500));
-  return { cep, logradouro: 'Rua Exemplo', bairro: 'Centro', localidade: cidades[i], uf: ufs[i] };
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.erro) return null;
+    return { cep, logradouro: data.logradouro || '', bairro: data.bairro || '', localidade: data.localidade || '', uf: data.uf || '' };
+  } catch (e) {
+    return null;
+  }
 }
-async function calcularFrete(cep, subtotal){
-  await new Promise(r=>setTimeout(r, 700));
-  const cepNum = parseInt(cep.replace(/\D/g,'').slice(0,3),10) || 100;
-  const distFactor = 1 + (cepNum % 9) / 10;
-  const pac = Math.max(14.9, +(18 * distFactor).toFixed(2));
-  const sedex = Math.max(24.9, +(pac * 1.7).toFixed(2));
-  const free = subtotal >= 250;
-  return [
-    { code:'PAC', label:'PAC (Correios)', price: free ? 0 : pac, days: 6 + (cepNum % 5) },
-    { code:'SEDEX', label:'SEDEX (Correios)', price: sedex, days: 2 + (cepNum % 3) },
-    { code:'TRANSP', label:'Transportadora Expressa', price: free ? 0 : +(pac*0.85).toFixed(2), days: 5 + (cepNum % 4) },
-  ];
+// Calcula o frete real (PAC/SEDEX e outras transportadoras) chamando o
+// servidor, que consulta a API do Melhor Envio com o peso/dimensões reais
+// dos produtos do carrinho. items: [{ id, qty }, ...].
+async function calcularFrete(cep, items){
+  try {
+    const res = await fetch('/api/calcular-frete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cep, items }),
+    });
+    const data = await res.json();
+    if (!res.ok || !Array.isArray(data.options) || !data.options.length) {
+      throw new Error((data && data.error) || 'Sem opções de frete para este CEP.');
+    }
+    return data.options;
+  } catch (e) {
+    console.log('Falha ao calcular frete real:', e);
+    return [];
+  }
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{

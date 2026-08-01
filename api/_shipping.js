@@ -101,6 +101,10 @@ async function calcularFreteMelhorEnvio({ cepDestino, lines }) {
 
   return data
     .filter((s) => !s.error && (s.price != null || s.custom_price != null))
+    // A loja só sabe despachar pelos Correios — outras transportadoras
+    // (Jadlog, Loggi, Azul Cargo, Total Express etc.) ficam de fora das
+    // opções mostradas ao cliente, mesmo que sejam mais baratas.
+    .filter((s) => s.company && String(s.company.name).trim().toLowerCase() === 'correios')
     .map((s) => ({
       code: String(s.id),
       label: s.company && s.company.name ? `${s.name} — ${s.company.name}` : String(s.name),

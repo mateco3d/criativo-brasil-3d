@@ -48,6 +48,19 @@ async function ensureSchema() {
       price NUMERIC(10,2) NOT NULL DEFAULT 0
     )
   `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS coupons (
+      code TEXT PRIMARY KEY,
+      type TEXT NOT NULL DEFAULT 'percent',
+      value NUMERIC(10,2) NOT NULL DEFAULT 0,
+      product_id TEXT,
+      active BOOLEAN NOT NULL DEFAULT true,
+      uses INT NOT NULL DEFAULT 0,
+      usage_limit INT,
+      expires_at DATE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
   schemaReady = true;
 }
 

@@ -14,8 +14,9 @@
    código/GitHub.
 =================================================================== */
 
-const { getProduct, unitPrice, COUPONS, round2 } = require('./_catalog');
+const { getProduct, unitPrice, round2 } = require('./_catalog');
 const { calcularFreteMelhorEnvio } = require('./_shipping');
+const { buscarCupom, statusCupom, computeDiscount, registrarUso } = require('./_coupons');
 const { sql, ensureSchema } = require('./_db');
 
 module.exports = async function handler(req, res) {
@@ -54,13 +55,31 @@ module.exports = async function handler(req, res) {
   }
   const subtotal = round2(lines.reduce((sum, l) => sum + l.unit * l.qty, 0));
 
-  // 2) Cupom (validado no servidor, nunca no valor enviado pelo cliente)
-  let discountRatio = 0;
+  // 2) Cupom (validado no servidor contra o banco de dados, nunca no
+  //    valor/desconto enviado pelo cliente). Cupons podem valer para o
+  //    pedido inteiro ou só para um produto específico (product_id) —
+  //    ver api/_coupons.js.
   let couponApplied = null;
+  let discountPerLine = lines.map(() => 0);
+  let freeShippingFromCoupon = false;
   if (body.couponCode) {
-    const code = String(body.couponCode).trim().toUpperCase();
-    if (COUPONS[code]) { discountRatio = COUPONS[code]; couponApplied = code; }
+    let cp;
+    try {
+      cp = await buscarCupom(body.couponCode);
+    } catch (err) {
+      console.log('Erro ao buscar cupom:', err);
+    }
+    const status = statusCupom(cp);
+    if (cp && status.ok) {
+      const result = computeDiscount(cp, lines);
+      if (result.applicable) {
+        couponApplied = cp.code;
+        discountPerLine = result.perLine;
+        freeShippingFromCoupon = result.freeShipping;
+      }
+    }
   }
+  const discountTotal = round2(discountPerLine.reduce((s, d) => s + d, 0));
 
   // 3) Frete real (Melhor Envio), recalculado aqui — nunca confiamos no
   //    valor/opção que o navegador manda, só usamos o "código" da opção
@@ -82,16 +101,22 @@ module.exports = async function handler(req, res) {
     }
     shipping = { label: chosen.label, price: chosen.price };
   }
+  if (freeShippingFromCoupon) {
+    shipping = { label: `${shipping.label} (frete grátis — cupom)`.trim(), price: 0 };
+  }
 
-  // 4) Monta os itens do Mercado Pago (desconto aplicado proporcionalmente
-  //    no preço unitário, para evitar itens com valor negativo)
-  const mpItems = lines.map((l) => ({
-    id: l.product.id,
-    title: l.product.name,
-    quantity: l.qty,
-    currency_id: 'BRL',
-    unit_price: round2(l.unit * (1 - discountRatio)),
-  }));
+  // 4) Monta os itens do Mercado Pago (desconto de cada linha aplicado no
+  //    próprio preço unitário, para evitar itens com valor negativo)
+  const mpItems = lines.map((l, idx) => {
+    const lineTotal = round2(l.unit * l.qty - (discountPerLine[idx] || 0));
+    return {
+      id: l.product.id,
+      title: l.product.name,
+      quantity: l.qty,
+      currency_id: 'BRL',
+      unit_price: round2(lineTotal / l.qty),
+    };
+  });
   if (shipping.price > 0) {
     mpItems.push({ title: `Frete — ${shipping.label}`, quantity: 1, currency_id: 'BRL', unit_price: shipping.price });
   }
@@ -140,15 +165,20 @@ module.exports = async function handler(req, res) {
       await sql`
         INSERT INTO orders (id, cliente, email, telefone, total, subtotal, shipping, discount, status, mp_preference_id)
         VALUES (${orderCode}, ${payer.name || null}, ${payer.email || null}, ${payer.phone || null},
-                ${total}, ${subtotal}, ${shipping.price}, ${round2(subtotal * discountRatio)},
+                ${total}, ${subtotal}, ${shipping.price}, ${discountTotal},
                 'Aguardando Pagamento', ${data.id})
         ON CONFLICT (id) DO NOTHING
       `;
-      for (const l of lines) {
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i];
+        const lineTotal = round2(l.unit * l.qty - (discountPerLine[i] || 0));
         await sql`
           INSERT INTO order_items (order_id, product_id, name, cat, qty, price)
-          VALUES (${orderCode}, ${l.product.id}, ${l.product.name}, ${l.product.cat || null}, ${l.qty}, ${round2(l.unit * l.qty * (1 - discountRatio))})
+          VALUES (${orderCode}, ${l.product.id}, ${l.product.name}, ${l.product.cat || null}, ${l.qty}, ${lineTotal})
         `;
+      }
+      if (couponApplied) {
+        await registrarUso(couponApplied);
       }
     } catch (dbErr) {
       console.log('Falha ao salvar pedido no banco de dados:', dbErr);
@@ -159,7 +189,7 @@ module.exports = async function handler(req, res) {
       total,
       subtotal,
       shipping: shipping.price,
-      discount: round2(subtotal * discountRatio),
+      discount: discountTotal,
       couponApplied,
       preferenceId: data.id,
       init_point: data.init_point,

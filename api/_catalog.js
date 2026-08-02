@@ -48,9 +48,6 @@ const PRODUCTS = [
   { id: 'p1785468431596', name: 'produto teste', price: 5, promo: null, weight_kg: 0.3, length_cm: 16, width_cm: 11, height_cm: 5 },
 ];
 
-// Precisa ser igual ao objeto COUPONS em carrinho.html
-const COUPONS = { BEMVINDO10: 0.1, CB3D15: 0.15 };
-
 function getProduct(id) {
   return PRODUCTS.find((p) => p.id === id) || null;
 }
@@ -63,4 +60,4 @@ function round2(n) {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 }
 
-module.exports = { PRODUCTS, COUPONS, getProduct, unitPrice, round2 };
+module.exports = { PRODUCTS, getProduct, unitPrice, round2 };

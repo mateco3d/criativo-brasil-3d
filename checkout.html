@@ -45,8 +45,8 @@
         <div class="card" style="margin-bottom:20px">
           <h3 style="margin-bottom:18px">Dados Pessoais</h3>
           <div class="form-row cols-2">
-            <div class="form-group"><label>Nome Completo</label><input type="text" required></div>
-            <div class="form-group"><label>CPF</label><input type="text" required placeholder="000.000.000-00"></div>
+            <div class="form-group"><label>Nome Completo</label><input type="text" id="nomeInput" required></div>
+            <div class="form-group"><label>CPF</label><input type="text" id="cpfInput" required placeholder="000.000.000-00"></div>
           </div>
           <div class="form-row cols-2">
             <div class="form-group"><label>Telefone</label><input type="tel" required placeholder="(11) 91234-5678"></div>
@@ -61,11 +61,12 @@
             <div class="form-group" style="grid-column:span 2"><label>Endereço</label><input type="text" id="ruaInput" required></div>
           </div>
           <div class="form-row cols-4">
-            <div class="form-group"><label>Número</label><input type="text" required></div>
-            <div class="form-group"><label>Complemento</label><input type="text"></div>
+            <div class="form-group"><label>Número</label><input type="text" id="numeroInput" required></div>
+            <div class="form-group"><label>Complemento</label><input type="text" id="complementoInput"></div>
             <div class="form-group"><label>Cidade</label><input type="text" id="cidadeInput" required></div>
             <div class="form-group"><label>Estado</label><input type="text" id="ufInput" required maxlength="2"></div>
           </div>
+          <input type="hidden" id="bairroInput">
           <p id="cepStatus" style="font-size:12.5px;color:var(--gray-500)"></p>
         </div>
 
@@ -171,6 +172,7 @@
       document.getElementById('ruaInput').value = addr.logradouro;
       document.getElementById('cidadeInput').value = addr.localidade;
       document.getElementById('ufInput').value = addr.uf;
+      document.getElementById('bairroInput').value = addr.bairro || '';
       document.getElementById('cepStatus').textContent = `Endereço encontrado: ${addr.bairro}, ${addr.localidade}/${addr.uf}`;
       document.getElementById('shippingOptions').innerHTML = '<p style="font-size:13px;color:var(--gray-500)">Calculando frete com os Correios...</p>';
       const items = Cart.lines().map(l => ({ id: l.id, qty: l.qty }));
@@ -230,7 +232,9 @@
     if (!form.checkValidity()){ form.reportValidity(); return; }
 
     const inputs = form.querySelectorAll('input');
-    const nome = inputs[0].value, telefone = inputs[2].value, email = inputs[3].value;
+    const nome = document.getElementById('nomeInput').value;
+    const cpf = document.getElementById('cpfInput').value;
+    const telefone = inputs[2].value, email = inputs[3].value;
 
     const btn = document.getElementById('finalizarBtn');
     const originalLabel = btn.textContent;
@@ -245,8 +249,21 @@
           items: Cart.lines().map(l => ({ id: l.id, qty: l.qty })),
           cep: cepInput.value,
           shippingCode: selectedShippingCode,
+          shippingLabel: selectedShipping ? selectedShipping.label : null,
           couponCode: couponCode,
-          buyer: { name: nome, email, phone: telefone },
+          buyer: { name: nome, email, phone: telefone, cpf },
+          // Endereço completo — guardado no pedido só para pré-preencher os
+          // dados de postagem no painel admin (ver admin/pedidos.html). Não
+          // é usado para calcular o frete, que já foi calculado acima.
+          address: {
+            cep: cepInput.value,
+            rua: document.getElementById('ruaInput').value,
+            numero: document.getElementById('numeroInput').value,
+            complemento: document.getElementById('complementoInput').value,
+            bairro: document.getElementById('bairroInput').value,
+            cidade: document.getElementById('cidadeInput').value,
+            uf: document.getElementById('ufInput').value,
+          },
         }),
       });
       const data = await resp.json();

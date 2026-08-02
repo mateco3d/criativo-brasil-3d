@@ -53,7 +53,7 @@
         <td>
           <div class="row-actions">
             <button title="Ver detalhes" onclick="verDetalhes('${o.id}')">${AICO.eye}</button>
-            <button title="Emitir etiqueta" onclick="alert('A emissão de etiqueta e envio pelos Correios ainda não está integrada — combinado com você, isso fica para uma próxima etapa.')">${AICO.print}</button>
+            <button title="Dados para postagem" onclick="abrirPostagem('${o.id}')">${AICO.print}</button>
           </div>
         </td>
       </tr>`;
@@ -65,6 +65,98 @@
     const itens = (o.itemsDetail||[]).map(it => `${it.qty}x ${it.name}`).join('\n') || '—';
     alert(`Pedido ${o.id}\nCliente: ${o.cliente||'—'} (${o.email||'—'})\nTelefone: ${o.telefone||'—'}\nStatus: ${o.status}\nTotal: ${formatBRL(o.total)}\n\nItens:\n${itens}`);
   }
+
+  // -------------------------------------------------------------------
+  // "Dados para postagem" — a emissão automática da etiqueta ainda não
+  // está integrada (isso exigiria uma permissão extra no token da Melhor
+  // Envio, hoje limitado só à cotação — ver claude/site-progresso.md).
+  // Enquanto isso não é feito, este painel pelo menos junta tudo que é
+  // preciso digitar no site da Melhor Envio num lugar só — endereço
+  // completo, CPF, serviço já escolhido/pago e peso/dimensões calculados
+  // a partir do catálogo — com um botão de copiar, para não ter que
+  // procurar essas informações em vários lugares (e-mail, catálogo, etc.)
+  // nem redigitar tudo à mão.
+  const CEP_ORIGEM = '11730-576';
+
+  function pesoDimensoesPedido(itemsDetail){
+    let pesoKg = 0, maiorComp = 0, maiorLarg = 0, somaAlt = 0, algumEstimado = false;
+    (itemsDetail||[]).forEach(it => {
+      const p = typeof getProduct === 'function' ? getProduct(it.product_id) : null;
+      const qty = it.qty || 1;
+      if (p && p.weight_kg){
+        pesoKg += p.weight_kg * qty;
+        maiorComp = Math.max(maiorComp, p.length_cm||0);
+        maiorLarg = Math.max(maiorLarg, p.width_cm||0);
+        somaAlt += (p.height_cm||0) * qty;
+      } else {
+        // Produto não encontrado no catálogo (ex.: removido depois da venda)
+        // — usa uma estimativa razoável só para não travar a tela.
+        pesoKg += 0.3 * qty;
+        maiorComp = Math.max(maiorComp, 16); maiorLarg = Math.max(maiorLarg, 11); somaAlt += 5 * qty;
+        algumEstimado = true;
+      }
+    });
+    return {
+      pesoKg: Math.max(0.1, round2(pesoKg)),
+      compCm: Math.max(16, Math.ceil(maiorComp)),
+      largCm: Math.max(11, Math.ceil(maiorLarg)),
+      altCm: Math.max(2, Math.ceil(somaAlt)),
+      algumEstimado,
+    };
+  }
+  function round2(n){ return Math.round((n + Number.EPSILON) * 100) / 100; }
+
+  function abrirPostagem(id){
+    const o = allOrders.find(x=>x.id===id);
+    if (!o) return;
+    const dim = pesoDimensoesPedido(o.itemsDetail);
+    const enderecoLinha = [
+      [o.rua, o.numero].filter(Boolean).join(', '),
+      o.complemento,
+      o.bairro,
+      [o.cidade, o.uf].filter(Boolean).join('/'),
+      o.cep,
+    ].filter(Boolean).join(' — ');
+    const temEndereco = !!(o.rua && o.cep);
+
+    const texto = [
+      `Pedido: ${o.id}`,
+      `Destinatário: ${o.cliente || '—'}${o.cpf ? ' — CPF ' + o.cpf : ''}`,
+      `Telefone: ${o.telefone || '—'}`,
+      `Endereço: ${temEndereco ? enderecoLinha : 'não informado neste pedido'}`,
+      `CEP origem (remetente): ${CEP_ORIGEM}`,
+      `Serviço escolhido no site: ${o.shipping_label || '—'} (frete pago: ${formatBRL(o.shipping||0)})`,
+      `Peso estimado: ${dim.pesoKg} kg`,
+      `Dimensões estimadas: ${dim.compCm} x ${dim.largCm} x ${dim.altCm} cm`,
+    ].join('\n');
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:14px;max-width:480px;width:100%;padding:26px;max-height:85vh;overflow:auto">
+        <h3 style="margin:0 0 4px">Dados para postagem — ${o.id}</h3>
+        <p style="font-size:12.5px;color:var(--gray-500);margin:0 0 18px">Cole estes dados no site da Melhor Envio para gerar a etiqueta. A emissão automática ainda não está integrada.</p>
+        ${!temEndereco ? '<p style="font-size:12.5px;color:var(--red);margin:0 0 12px">Este pedido não tem endereço completo salvo (foi feito antes desta atualização). Confirme o endereço direto com o cliente.</p>' : ''}
+        ${dim.algumEstimado ? '<p style="font-size:12.5px;color:var(--red);margin:0 0 12px">Peso/dimensões de ao menos um item foram estimados (produto não encontrado no catálogo atual) — confira antes de postar.</p>' : ''}
+        <pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;background:var(--gray-100,#f4f4f4);border-radius:10px;padding:14px;line-height:1.7">${texto}</pre>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button class="btn btn-gold" style="flex:1" id="copiarPostagemBtn">Copiar dados</button>
+          <button class="btn btn-ghost" id="fecharPostagemBtn">Fechar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e)=>{ if (e.target === modal) modal.remove(); });
+    modal.querySelector('#fecharPostagemBtn').addEventListener('click', ()=> modal.remove());
+    modal.querySelector('#copiarPostagemBtn').addEventListener('click', async ()=>{
+      try {
+        await navigator.clipboard.writeText(texto);
+        showToast('Copiado!', 'Dados prontos para colar na Melhor Envio.');
+      } catch (e) {
+        showToast('Não foi possível copiar', 'Selecione o texto manualmente.');
+      }
+    });
+  }
+  window.abrirPostagem = abrirPostagem;
   async function changeStatus(id, status){
     const o = allOrders.find(x=>x.id===id); if (o) o.status = status;
     render(document.getElementById('statusFilter').value);

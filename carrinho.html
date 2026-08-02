@@ -41,10 +41,22 @@
 <script src="assets/js/main.js"></script>
 <script>
   mountLayout(null);
-  const COUPONS = { 'BEMVINDO10': .10, 'CB3D15': .15 };
+  // Cupom real, validado no servidor (/api/aplicar-cupom) — pode valer
+  // para o carrinho inteiro ou só para um produto específico. O valor
+  // final cobrado é sempre recalculado de novo em api/create-preference.js.
   let couponCode = localStorage.getItem('cb3d_coupon') || null;
-  let coupon = (couponCode && COUPONS[couponCode]) || null;
-  if (couponCode && !coupon) { couponCode = null; localStorage.removeItem('cb3d_coupon'); }
+  let couponResult = null; // resposta de /api/aplicar-cupom quando válido
+
+  async function validateCoupon(code){
+    if (!code){ couponResult = null; return; }
+    try {
+      const items = Cart.lines().map(l => ({ id: l.id, qty: l.qty }));
+      if (!items.length){ couponResult = null; return; }
+      const res = await fetch('/api/aplicar-cupom', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code, items }) });
+      const data = await res.json();
+      couponResult = data.valid ? data : null;
+    } catch (e) { couponResult = null; }
+  }
 
   function render(){
     const lines = Cart.lines();
@@ -54,7 +66,7 @@
       return;
     }
     const subtotal = Cart.subtotal();
-    const discount = coupon ? subtotal * coupon : 0;
+    const discount = couponResult ? couponResult.discount : 0;
     el.innerHTML = `
       <div class="cart-wrap">
         <div>
@@ -75,39 +87,44 @@
               <div></div>
             </div>`).join('')}
           <div class="coupon-row">
-            <input type="text" id="couponInput" placeholder="Cupom de desconto (ex: BEMVINDO10)" value="${couponCode || ''}">
+            <input type="text" id="couponInput" placeholder="Cupom de desconto" value="${couponCode || ''}">
             <button class="btn btn-black" onclick="applyCoupon()">Aplicar</button>
           </div>
         </div>
         <div class="card">
           <h3 style="margin-bottom:16px">Resumo do Pedido</h3>
           <div class="summary-row"><span>Subtotal</span><span>${formatBRL(subtotal)}</span></div>
-          ${coupon ? `<div class="summary-row" style="color:var(--green)"><span>Cupom ${couponCode} aplicado (-${coupon*100}%) <a href="javascript:void(0)" onclick="removeCoupon()" style="color:var(--red);font-size:11.5px;margin-left:6px">remover</a></span><span>-${formatBRL(discount)}</span></div>` : ''}
-          <div class="summary-row"><span>Frete</span><span style="color:var(--gray-500)">Calculado no checkout</span></div>
+          ${couponResult ? `<div class="summary-row" style="color:var(--green)"><span>${couponResult.message} <a href="javascript:void(0)" onclick="removeCoupon()" style="color:var(--red);font-size:11.5px;margin-left:6px">remover</a></span><span>${couponResult.freeShipping ? 'Grátis' : '-' + formatBRL(discount)}</span></div>` : ''}
+          <div class="summary-row"><span>Frete</span><span style="color:var(--gray-500)">${couponResult && couponResult.freeShipping ? 'Grátis (cupom)' : 'Calculado no checkout'}</span></div>
           <div class="summary-row total"><span>Total</span><span>${formatBRL(subtotal - discount)}</span></div>
           <a href="checkout.html" class="btn btn-gold btn-block" style="margin-top:14px">Finalizar Compra</a>
           <a href="produtos.html" class="btn btn-ghost btn-block" style="margin-top:10px">Continuar Comprando</a>
         </div>
       </div>`;
   }
-  function applyCoupon(){
+  window.applyCoupon = async function(){
     const code = document.getElementById('couponInput').value.trim().toUpperCase();
-    if (COUPONS[code]) {
-      coupon = COUPONS[code]; couponCode = code;
+    if (!code) return;
+    await validateCoupon(code);
+    if (couponResult){
+      couponCode = code;
       localStorage.setItem('cb3d_coupon', code);
-      showToast('Cupom aplicado!', `Desconto de ${COUPONS[code]*100}% ativado.`);
+      showToast('Cupom aplicado!', couponResult.message);
     } else {
-      showToast('Cupom inválido', 'Verifique o código digitado.');
+      showToast('Cupom inválido', 'Verifique o código ou se ele vale para os itens do carrinho.');
     }
     render();
-  }
-  function removeCoupon(){
-    coupon = null; couponCode = null;
+  };
+  window.removeCoupon = function(){
+    couponCode = null; couponResult = null;
     localStorage.removeItem('cb3d_coupon');
     render();
-  }
-  render();
-  document.addEventListener('cart:update', render);
+  };
+  (async function init(){
+    if (couponCode) await validateCoupon(couponCode);
+    render();
+  })();
+  document.addEventListener('cart:update', async () => { if (couponCode) await validateCoupon(couponCode); render(); });
 </script>
 </body>
 </html>

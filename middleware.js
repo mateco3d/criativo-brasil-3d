@@ -14,7 +14,7 @@
 =================================================================== */
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/orders', '/api/orders/:path*'],
+  matcher: ['/admin/:path*', '/api/orders', '/api/orders/:path*', '/api/coupons', '/api/coupons/:path*'],
 };
 
 export default function middleware(req) {

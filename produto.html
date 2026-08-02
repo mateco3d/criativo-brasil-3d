@@ -34,6 +34,11 @@
   .pd-actions { display: flex; gap: 12px; }
   .pd-actions .btn { flex: 1; padding: 16px; }
   .pd-stock { font-size: 13px; color: var(--green); font-weight: 700; display:flex; align-items:center; gap:6px; margin-bottom:18px; }
+  .pd-coupon-row { display: flex; gap: 10px; margin-bottom: 18px; }
+  .pd-coupon-row input { flex: 1; padding: 12px 16px; border-radius: 10px; border: 1.5px solid #e2e2e2; }
+  .pd-coupon-msg { font-size: 13px; margin: -10px 0 18px; display: none; }
+  .pd-coupon-msg.ok { color: var(--green); display: block; }
+  .pd-coupon-msg.err { color: var(--red); display: block; }
   .pd-tabs { display: flex; gap: 30px; border-bottom: 1px solid #eee; margin: 60px 0 30px; }
   .pd-tab { padding: 14px 2px; font-weight: 600; font-size: 14.5px; color: var(--gray-500); position: relative; cursor: pointer; }
   .pd-tab.active { color: var(--black); }
@@ -74,6 +79,12 @@
       <div class="pd-specs" id="pdSpecs"></div>
 
       <div class="pd-stock" id="pdStock"></div>
+
+      <div class="pd-coupon-row">
+        <input type="text" id="pdCouponInput" placeholder="Cupom de desconto (se houver)">
+        <button class="btn btn-black" type="button" id="pdCouponBtn">Aplicar</button>
+      </div>
+      <div class="pd-coupon-msg" id="pdCouponMsg"></div>
 
       <div class="pd-buybox">
         <div class="qty-box" style="height:48px">
@@ -165,9 +176,66 @@
   window.changeQty = function(delta){
     const inp = document.getElementById('qtyInput');
     inp.value = Math.max(1, (parseInt(inp.value)||1) + delta);
+    renderCouponDiscount();
   };
   window.addCurrentToCart = function(){ addToCartWithFeedback(p.id, parseInt(document.getElementById('qtyInput').value)||1, true); };
   window.buyNow = function(){ addToCartWithFeedback(p.id, parseInt(document.getElementById('qtyInput').value)||1, false); location.href='checkout.html'; };
+
+  // ---------- Cupom de desconto (validado no servidor) ----------
+  // O código fica salvo no mesmo localStorage usado pelo carrinho e pelo
+  // checkout (cb3d_coupon) — se o cupom for válido só para este produto,
+  // o desconto só é aplicado quando este produto estiver no carrinho.
+  let appliedCoupon = null; // { code, type, value } depois de validado
+  const savedCouponCode = localStorage.getItem('cb3d_coupon');
+  if (savedCouponCode) document.getElementById('pdCouponInput').value = savedCouponCode;
+
+  function renderCouponDiscount(){
+    const msgEl = document.getElementById('pdCouponMsg');
+    if (!appliedCoupon){ msgEl.className = 'pd-coupon-msg'; msgEl.textContent = ''; return; }
+    const qty = parseInt(document.getElementById('qtyInput').value)||1;
+    const unit = p.promo || p.price;
+    let desconto = 0;
+    if (appliedCoupon.type === 'percent') desconto = round2(unit*qty*(appliedCoupon.value/100));
+    else if (appliedCoupon.type === 'fixed') desconto = Math.min(appliedCoupon.value, unit*qty);
+    const texto = appliedCoupon.type === 'shipping'
+      ? `Cupom ${appliedCoupon.code} aplicado: frete grátis para este produto.`
+      : `Cupom ${appliedCoupon.code} aplicado: -${formatBRL(desconto)} neste produto.`;
+    msgEl.className = 'pd-coupon-msg ok';
+    msgEl.textContent = texto;
+  }
+  function round2(n){ return Math.round((n + Number.EPSILON) * 100) / 100; }
+
+  async function tentarAplicarCupom(code){
+    const msgEl = document.getElementById('pdCouponMsg');
+    if (!code){ appliedCoupon = null; renderCouponDiscount(); return; }
+    try {
+      const res = await fetch('/api/aplicar-cupom', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, items: [{ id: p.id, qty: parseInt(document.getElementById('qtyInput').value)||1 }] }),
+      });
+      const data = await res.json();
+      if (data.valid){
+        appliedCoupon = { code: data.code, type: data.type, value: data.value };
+        localStorage.setItem('cb3d_coupon', data.code);
+        renderCouponDiscount();
+      } else {
+        appliedCoupon = null;
+        msgEl.className = 'pd-coupon-msg err';
+        msgEl.textContent = data.message || 'Cupom inválido.';
+      }
+    } catch (e) {
+      appliedCoupon = null;
+      msgEl.className = 'pd-coupon-msg err';
+      msgEl.textContent = 'Não foi possível validar o cupom agora.';
+    }
+  }
+  document.getElementById('pdCouponBtn').addEventListener('click', () => {
+    tentarAplicarCupom(document.getElementById('pdCouponInput').value.trim().toUpperCase());
+  });
+  document.getElementById('pdCouponInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter'){ e.preventDefault(); tentarAplicarCupom(document.getElementById('pdCouponInput').value.trim().toUpperCase()); }
+  });
+  if (savedCouponCode) tentarAplicarCupom(savedCouponCode);
 
   // Tabs
   document.querySelectorAll('.pd-tab').forEach(tab=>{

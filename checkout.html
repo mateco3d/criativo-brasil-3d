@@ -115,30 +115,46 @@
   mountLayout(null);
   let selectedShipping = null;
   let selectedShippingCode = 'PAC';
-  const COUPONS = { 'BEMVINDO10': .10, 'CB3D15': .15 };
+  // Cupom real, validado no servidor (/api/aplicar-cupom) — pode valer para
+  // o pedido inteiro ou só para um produto específico (aplicado antes, no
+  // carrinho ou na página do produto). O valor final cobrado é sempre
+  // recalculado de novo em api/create-preference.js na hora de pagar.
   const couponCode = localStorage.getItem('cb3d_coupon') || null;
-  const couponPct = (couponCode && COUPONS[couponCode]) || 0;
+  let couponResult = null;
+
+  async function loadCoupon(){
+    if (!couponCode) return;
+    try {
+      const items = Cart.lines().map(l => ({ id: l.id, qty: l.qty }));
+      if (!items.length) return;
+      const res = await fetch('/api/aplicar-cupom', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code: couponCode, items }) });
+      const data = await res.json();
+      couponResult = data.valid ? data : null;
+    } catch (e) { couponResult = null; }
+  }
 
   function renderItems(){
     const lines = Cart.lines();
     document.getElementById('checkoutItems').innerHTML = lines.map(l => `
       <div class="summary-mini-item"><span>${l.qty}x ${l.product.name}</span><span>${formatBRL(l.subtotal)}</span></div>`).join('') || '<p style="color:#999;font-size:13px">Carrinho vazio.</p>';
     document.getElementById('coSubtotal').textContent = formatBRL(Cart.subtotal());
-    if (couponPct > 0){
+    if (couponResult){
       document.getElementById('coCouponRow').style.display = 'flex';
-      document.getElementById('coCouponLabel').textContent = `Cupom ${couponCode} (-${couponPct*100}%)`;
+      document.getElementById('coCouponLabel').textContent = couponResult.message;
     }
     updateTotal();
   }
   function updateTotal(){
     const sub = Cart.subtotal();
-    const desconto = round2(sub * couponPct);
-    const frete = selectedShipping ? selectedShipping.price : 0;
-    document.getElementById('coDesconto').textContent = '-' + formatBRL(desconto);
+    const desconto = couponResult ? couponResult.discount : 0;
+    const freteGratis = couponResult && couponResult.freeShipping;
+    const frete = freteGratis ? 0 : (selectedShipping ? selectedShipping.price : 0);
+    document.getElementById('coDesconto').textContent = couponResult && couponResult.freeShipping ? 'Frete grátis' : '-' + formatBRL(desconto);
+    if (freteGratis) document.getElementById('coFrete').textContent = 'Grátis (cupom)';
     document.getElementById('coTotal').textContent = formatBRL(sub - desconto + frete);
   }
   function round2(n){ return Math.round((n + Number.EPSILON) * 100) / 100; }
-  renderItems();
+  (async function initCoupon(){ await loadCoupon(); renderItems(); })();
 
   const cepInput = document.getElementById('cepInput');
   cepInput.addEventListener('input', ()=>{

@@ -34,6 +34,10 @@
   let customers = [];
   function buildCustomers(orders){
     const byEmail = {};
+    // "Pedidos" conta todo pedido não cancelado (inclui Aguardando
+    // Pagamento). "Total Gasto" só soma pedidos realmente pagos — dinheiro
+    // que ainda não entrou não conta como gasto do cliente.
+    const isPaid = o => o.status !== 'Cancelado' && o.status !== 'Aguardando Pagamento';
     orders.filter(o => o.status !== 'Cancelado').forEach(o => {
       const key = (o.email || o.cliente || 'sem-email').toLowerCase();
       if (!byEmail[key]) {
@@ -41,7 +45,7 @@
       }
       const cu = byEmail[key];
       cu.orders += 1;
-      cu.total += o.total || 0;
+      if (isPaid(o)) cu.total += o.total || 0;
       if (new Date(o.created_at) < new Date(cu.since)) cu.since = o.created_at;
     });
     return Object.values(byEmail).sort((a,b) => b.total - a.total);

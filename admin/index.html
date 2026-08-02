@@ -26,22 +26,30 @@
   (async function init(){
     const orders = await fetchOrders();
     const isCounted = o => o.status !== 'Cancelado';
+    // Faturamento e vendas só devem contar pedidos realmente pagos —
+    // "Aguardando Pagamento" ainda não é dinheiro em caixa, e "Cancelado"
+    // nunca virou pagamento. Só conta a partir de "Processando" em diante
+    // (Processando/Enviado/Entregue).
+    const isPaid = o => o.status !== 'Cancelado' && o.status !== 'Aguardando Pagamento';
 
     const MONTH_LABELS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     const now = new Date();
     const monthKey = ts => { const d = new Date(ts); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
     const orderTs = o => new Date(o.created_at).getTime();
-    const ordersInMonth = key => orders.filter(o => isCounted(o) && o.created_at && monthKey(orderTs(o)) === key);
+    const ordersInMonth = (key, filterFn) => orders.filter(o => filterFn(o) && o.created_at && monthKey(orderTs(o)) === key);
     const sum = list => list.reduce((s, o) => s + (o.total || 0), 0);
     const pctDelta = (cur, prev) => (prev ? ((cur - prev) / prev) * 100 : null);
     const deltaLabel = d => (d === null || !isFinite(d)) ? '—' : (d >= 0 ? '+' : '') + d.toFixed(0) + '%';
 
     const curKey = monthKey(now.getTime());
     const prevKey = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime());
-    const curOrders = ordersInMonth(curKey), prevOrders = ordersInMonth(prevKey);
-    const curFat = sum(curOrders), prevFat = sum(prevOrders);
+    // "Pedidos"/"Clientes" contam pedidos feitos (inclui Aguardando Pagamento,
+    // exclui só Cancelado). "Faturamento"/"Ticket Médio" contam só pedidos pagos.
+    const curOrders = ordersInMonth(curKey, isCounted), prevOrders = ordersInMonth(prevKey, isCounted);
+    const curPaidOrders = ordersInMonth(curKey, isPaid), prevPaidOrders = ordersInMonth(prevKey, isPaid);
+    const curFat = sum(curPaidOrders), prevFat = sum(prevPaidOrders);
     const curPedidos = curOrders.length, prevPedidos = prevOrders.length;
-    const curTicket = curPedidos ? curFat / curPedidos : 0, prevTicket = prevPedidos ? prevFat / prevPedidos : 0;
+    const curTicket = curPaidOrders.length ? curFat / curPaidOrders.length : 0, prevTicket = prevPaidOrders.length ? prevFat / prevPaidOrders.length : 0;
     const curClientes = new Set(curOrders.map(o => o.email || o.cliente)).size, prevClientes = new Set(prevOrders.map(o => o.email || o.cliente)).size;
 
     const mk = d => d === null ? '' : (d >= 0 ? 'up' : 'down');
@@ -55,12 +63,12 @@
     const salesByMonth = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      salesByMonth.push({ label: MONTH_LABELS[d.getMonth()], value: sum(ordersInMonth(monthKey(d.getTime()))) });
+      salesByMonth.push({ label: MONTH_LABELS[d.getMonth()], value: sum(ordersInMonth(monthKey(d.getTime()), isPaid)) });
     }
 
     const CAT_COLORS = ['#FFC107', '#121212', '#7a7a7a', '#e0a600', '#c9c9c9', '#8a6d00', '#4a4a4a', '#d4af37'];
     const catTotals = {};
-    orders.filter(isCounted).forEach(o => (o.itemsDetail || []).forEach(it => {
+    orders.filter(isPaid).forEach(o => (o.itemsDetail || []).forEach(it => {
       const key = it.cat || 'outros';
       catTotals[key] = (catTotals[key] || 0) + (it.price || 0);
     }));
@@ -70,7 +78,7 @@
       : [{ label: 'Sem vendas ainda', value: 1, color: '#e2e2e2' }];
 
     const salesByProduct = {};
-    orders.filter(isCounted).forEach(o => (o.itemsDetail || []).forEach(it => {
+    orders.filter(isPaid).forEach(o => (o.itemsDetail || []).forEach(it => {
       salesByProduct[it.product_id] = (salesByProduct[it.product_id] || 0) + (it.qty || 0);
     }));
     const bestSellers = PRODUCTS.slice()

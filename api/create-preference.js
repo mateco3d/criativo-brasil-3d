@@ -126,6 +126,7 @@ module.exports = async function handler(req, res) {
   const origin = `https://${req.headers['x-forwarded-host'] || req.headers.host}`;
 
   const payer = body.buyer && typeof body.buyer === 'object' ? body.buyer : {};
+  const address = body.address && typeof body.address === 'object' ? body.address : {};
   const preferenceBody = {
     items: mpItems,
     payer: {
@@ -163,10 +164,18 @@ module.exports = async function handler(req, res) {
     try {
       await ensureSchema();
       await sql`
-        INSERT INTO orders (id, cliente, email, telefone, total, subtotal, shipping, discount, status, mp_preference_id)
-        VALUES (${orderCode}, ${payer.name || null}, ${payer.email || null}, ${payer.phone || null},
-                ${total}, ${subtotal}, ${shipping.price}, ${discountTotal},
-                'Aguardando Pagamento', ${data.id})
+        INSERT INTO orders (
+          id, cliente, email, telefone, total, subtotal, shipping, discount, status, mp_preference_id,
+          cpf, cep, rua, numero, complemento, bairro, cidade, uf, shipping_label
+        )
+        VALUES (
+          ${orderCode}, ${payer.name || null}, ${payer.email || null}, ${payer.phone || null},
+          ${total}, ${subtotal}, ${shipping.price}, ${discountTotal},
+          'Aguardando Pagamento', ${data.id},
+          ${payer.cpf || null}, ${address.cep || null}, ${address.rua || null}, ${address.numero || null},
+          ${address.complemento || null}, ${address.bairro || null}, ${address.cidade || null}, ${address.uf || null},
+          ${shipping.label || null}
+        )
         ON CONFLICT (id) DO NOTHING
       `;
       for (let i = 0; i < lines.length; i++) {

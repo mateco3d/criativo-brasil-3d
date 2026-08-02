@@ -37,6 +37,20 @@ async function ensureSchema() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `;
+  // Colunas de endereço/CPF/serviço de envio — adicionadas depois da tabela
+  // já existir em produção, por isso via ALTER TABLE (não dá pra colocar
+  // só no CREATE TABLE acima, que só roda na primeira vez). Servem para
+  // pré-preencher os dados de postagem no painel (ver admin/pedidos.html),
+  // já que antes esses dados eram só coletados no checkout e descartados.
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS cpf TEXT`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS cep TEXT`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS rua TEXT`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS numero TEXT`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS complemento TEXT`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS bairro TEXT`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS cidade TEXT`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS uf TEXT`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_label TEXT`;
   await sql`
     CREATE TABLE IF NOT EXISTS order_items (
       id SERIAL PRIMARY KEY,

@@ -18,7 +18,8 @@ module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     const { rows: orders } = await sql`
       SELECT id, cliente, email, telefone, total, subtotal, shipping, discount,
-             status, mp_payment_id, mp_status, seen, created_at, updated_at
+             status, mp_payment_id, mp_status, seen, created_at, updated_at,
+             cpf, cep, rua, numero, complemento, bairro, cidade, uf, shipping_label
       FROM orders
       ORDER BY created_at DESC
       LIMIT 300

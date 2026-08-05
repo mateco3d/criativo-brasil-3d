@@ -33,9 +33,22 @@
     return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
   }
 
-  function render(filter){
+  // Data local (do navegador) no formato AAAA-MM-DD — usada para comparar
+  // com os campos <input type="date"> do filtro e com o botão "Hoje".
+  // Importante usar a data LOCAL (não a UTC) para bater com o dia que o
+  // admin realmente está vendo no relógio dele.
+  function toYMD(d){
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  function render(){
     let orders = allOrders;
-    if (filter) orders = orders.filter(o => o.status === filter);
+    const statusVal = document.getElementById('statusFilter').value;
+    const dataInicio = document.getElementById('dataInicio').value;
+    const dataFim = document.getElementById('dataFim').value;
+    if (statusVal) orders = orders.filter(o => o.status === statusVal);
+    if (dataInicio) orders = orders.filter(o => o.created_at && toYMD(new Date(o.created_at)) >= dataInicio);
+    if (dataFim) orders = orders.filter(o => o.created_at && toYMD(new Date(o.created_at)) <= dataFim);
     document.getElementById('ordTbody').innerHTML = orders.map((o) => {
       const itemCount = (o.itemsDetail||[]).reduce((n,it)=>n+(it.qty||0),0) || 1;
       return `
@@ -199,21 +212,50 @@
 
   async function changeStatus(id, status){
     const o = allOrders.find(x=>x.id===id); if (o) o.status = status;
-    render(document.getElementById('statusFilter').value);
+    render();
     await updateOrderStatus(id, status);
     if (status === 'Enviado') abrirRastreio(id);
   }
   window.changeStatus = changeStatus;
   window.verDetalhes = verDetalhes;
 
+  // -------------------------------------------------------------------
+  // Filtro por data — busca pedidos de um dia específico ou de um período
+  // (ex.: "quero achar um pedido de tal data"). Combina com o filtro de
+  // status já existente. O botão "Hoje" preenche as duas datas com o dia
+  // atual; "Limpar" tira o filtro de data (mantendo o de status).
+  function filtrarHoje(){
+    const hoje = toYMD(new Date());
+    document.getElementById('dataInicio').value = hoje;
+    document.getElementById('dataFim').value = hoje;
+    render();
+  }
+  window.filtrarHoje = filtrarHoje;
+  function limparFiltroData(){
+    document.getElementById('dataInicio').value = '';
+    document.getElementById('dataFim').value = '';
+    render();
+  }
+  window.limparFiltroData = limparFiltroData;
+
   c.innerHTML = `
     <div class="admin-panel">
-      <div class="admin-toolbar">
+      <div class="admin-toolbar" style="flex-wrap:wrap;gap:12px;align-items:center">
         <h3 style="margin:0">Todos os Pedidos</h3>
-        <select id="statusFilter" onchange="render(this.value)" style="padding:10px 14px;border-radius:10px;border:1.5px solid #e2e2e2;font-size:13px">
-          <option value="">Todos os status</option>
-          ${STATUS.map(s=>`<option value="${s}">${s}</option>`).join('')}
-        </select>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <label style="font-size:12px;color:var(--gray-500);display:flex;align-items:center;gap:6px">De
+            <input type="date" id="dataInicio" onchange="render()" style="padding:9px 10px;border-radius:9px;border:1.5px solid #e2e2e2;font-size:13px">
+          </label>
+          <label style="font-size:12px;color:var(--gray-500);display:flex;align-items:center;gap:6px">até
+            <input type="date" id="dataFim" onchange="render()" style="padding:9px 10px;border-radius:9px;border:1.5px solid #e2e2e2;font-size:13px">
+          </label>
+          <button class="btn btn-ghost" style="padding:9px 14px;font-size:12.5px" onclick="filtrarHoje()">Pedidos de hoje</button>
+          <button class="btn btn-ghost" style="padding:9px 14px;font-size:12.5px" onclick="limparFiltroData()">Limpar data</button>
+          <select id="statusFilter" onchange="render()" style="padding:10px 14px;border-radius:10px;border:1.5px solid #e2e2e2;font-size:13px">
+            <option value="">Todos os status</option>
+            ${STATUS.map(s=>`<option value="${s}">${s}</option>`).join('')}
+          </select>
+        </div>
       </div>
       <div style="overflow-x:auto">
         <table class="admin-table">
@@ -225,7 +267,7 @@
 
   (async function init(){
     allOrders = await fetchOrders();
-    render('');
+    render();
     await markOrdersSeen();
     refreshOrderBadge();
   })();

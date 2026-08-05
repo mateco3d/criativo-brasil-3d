@@ -35,6 +35,11 @@
             <div class="form-group"><label>Categoria</label>
               <select id="f_cat">${CATEGORIES.map(cc=>`<option value="${cc.slug}" ${e.cat===cc.slug?'selected':''}>${cc.name}</option>`).join('')}</select>
             </div>
+            <div class="form-group"><label>Subcategoria</label>
+              <select id="f_subcat"></select>
+            </div>
+          </div>
+          <div class="form-row cols-2">
             <div class="form-group"><label>SKU</label><input type="text" id="f_sku" value="${e.sku||''}"></div>
           </div>
           <div class="form-group"><label>Descrição Curta</label><input type="text" id="f_short" value="${e.short||''}"></div>
@@ -92,6 +97,21 @@
       </div>
     </form>`;
 
+  // Subcategoria depende da categoria escolhida (ex.: categoria "Casa" tem a
+  // subcategoria "Banheiro"). O select de subcategoria é repopulado sempre
+  // que a categoria muda, e tenta manter a subcategoria já salva no produto
+  // (e.subcat) se ela ainda pertencer à categoria selecionada.
+  function renderSubcatOptions(preserveSelected){
+    const catSlug = document.getElementById('f_cat').value;
+    const cat = CATEGORIES.find(cc=>cc.slug===catSlug);
+    const subs = (cat && cat.subcategories) || [];
+    const wanted = preserveSelected ? e.subcat : document.getElementById('f_subcat').value;
+    document.getElementById('f_subcat').innerHTML = '<option value="">Sem subcategoria</option>' +
+      subs.map(s=>`<option value="${s.slug}" ${wanted===s.slug?'selected':''}>${s.name}</option>`).join('');
+  }
+  document.getElementById('f_cat').addEventListener('change', () => renderSubcatOptions(false));
+  renderSubcatOptions(true);
+
   document.getElementById('prodForm').addEventListener('submit', function(ev){
     ev.preventDefault();
     const tags = [];
@@ -100,7 +120,8 @@
     if (document.getElementById('tag_maisvendido').checked) tags.push('mais-vendido');
     const product = {
       id: e.id, slug: document.getElementById('f_slug').value, name: document.getElementById('f_name').value,
-      cat: document.getElementById('f_cat').value, sku: document.getElementById('f_sku').value,
+      cat: document.getElementById('f_cat').value, subcat: document.getElementById('f_subcat').value || null,
+      sku: document.getElementById('f_sku').value,
       short: document.getElementById('f_short').value, desc: document.getElementById('f_desc').value,
       price: parseFloat(document.getElementById('f_price').value)||0,
       promo: parseFloat(document.getElementById('f_promo').value)||null,

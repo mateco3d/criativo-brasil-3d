@@ -25,7 +25,7 @@
       <tr>
         <td><div class="admin-thumb">${iconFor(p.cat)}</div></td>
         <td><strong>${p.name}</strong><div style="font-size:11px;color:#999">${p.sku}</div></td>
-        <td>${(CATEGORIES.find(cc=>cc.slug===p.cat)||{}).name || p.cat}</td>
+        <td>${(CATEGORIES.find(cc=>cc.slug===p.cat)||{}).name || p.cat}${p.subcat ? ` <span style="color:#999;font-size:11px">› ${(((CATEGORIES.find(cc=>cc.slug===p.cat)||{}).subcategories||[]).find(s=>s.slug===p.subcat)||{}).name || p.subcat}</span>` : ''}</td>
         <td>${p.promo ? `<span style="text-decoration:line-through;color:#999;font-size:12px">${formatBRL(p.price)}</span> ${formatBRL(p.promo)}` : formatBRL(p.price)}</td>
         <td>${p.stock > 10 ? `<span class="pill pill-green">${p.stock} un.</span>` : p.stock > 0 ? `<span class="pill pill-gold">${p.stock} un.</span>` : `<span class="pill pill-red">Esgotado</span>`}</td>
         <td>${(p.tags||[]).map(t=>`<span class="pill pill-gray" style="margin-right:4px">${t}</span>`).join('') || '—'}</td>

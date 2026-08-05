@@ -19,20 +19,58 @@
   const c = document.getElementById('adminContent');
   AdminStore.seed();
 
+  // Linhas de subcategoria expandidas (por índice de categoria) ficam
+  // guardadas aqui só em memória, pra lembrar o que estava aberto ao
+  // re-renderizar a tabela (ex.: depois de adicionar uma subcategoria).
+  const openSubs = new Set();
+
   function render(){
     const cats = AdminStore.get('categories');
-    document.getElementById('catTbody').innerHTML = cats.map((cat,i) => `
+    document.getElementById('catTbody').innerHTML = cats.map((cat,i) => {
+      const subs = cat.subcategories || [];
+      const isOpen = openSubs.has(i);
+      const mainRow = `
       <tr>
         <td><div class="admin-thumb">${iconFor(cat.slug)}</div></td>
         <td><strong>${cat.name}</strong></td>
         <td style="color:#999">${cat.slug}</td>
         <td>${cat.desc}</td>
         <td>${PRODUCTS.filter(p=>p.cat===cat.slug).length} produtos</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="toggleSubs(${i})">
+            ${subs.length} subcategoria${subs.length!==1?'s':''} ${isOpen ? '▲' : '▼'}
+          </button>
+        </td>
         <td><div class="row-actions"><button title="Editar" onclick="editCat(${i})">${AICO.edit}</button><button title="Excluir" onclick="delCat(${i})">${AICO.trash}</button></div></td>
-      </tr>`).join('');
+      </tr>`;
+      if (!isOpen) return mainRow;
+      const subRows = subs.length ? subs.map((sub, j) => `
+        <tr style="background:#fafafa">
+          <td></td>
+          <td colspan="2" style="padding-left:34px;color:#555">↳ ${sub.name}</td>
+          <td style="color:#999">${sub.slug}</td>
+          <td>${PRODUCTS.filter(p=>p.cat===cat.slug && p.subcat===sub.slug).length} produtos</td>
+          <td></td>
+          <td><div class="row-actions"><button title="Editar" onclick="editSub(${i},${j})">${AICO.edit}</button><button title="Excluir" onclick="delSub(${i},${j})">${AICO.trash}</button></div></td>
+        </tr>`).join('') : `
+        <tr style="background:#fafafa"><td></td><td colspan="6" style="padding-left:34px;color:#999">Nenhuma subcategoria cadastrada.</td></tr>`;
+      const addRow = `
+        <tr style="background:#fafafa">
+          <td></td>
+          <td colspan="6" style="padding-left:34px">
+            <button class="btn btn-gold btn-sm" onclick="addSub(${i})">${AICO.plus} Nova Subcategoria em "${cat.name}"</button>
+          </td>
+        </tr>`;
+      return mainRow + subRows + addRow;
+    }).join('');
   }
+  function toggleSubs(i){
+    if (openSubs.has(i)) openSubs.delete(i); else openSubs.add(i);
+    render();
+  }
+  function slugify(s){ return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
   function delCat(i){
-    if (!confirm('Excluir esta categoria?')) return;
+    if (!confirm('Excluir esta categoria? As subcategorias dela também serão excluídas.')) return;
     const cats = AdminStore.get('categories'); cats.splice(i,1); AdminStore.set('categories', cats); render();
   }
   function editCat(i){
@@ -40,6 +78,31 @@
     const name = prompt('Nome da categoria:', cat.name); if (name===null) return;
     cat.name = name; AdminStore.set('categories', cats); render();
   }
+  function addSub(i){
+    const name = prompt('Nome da nova subcategoria (ex.: Banheiro):'); if (!name) return;
+    const cats = AdminStore.get('categories');
+    const cat = cats[i];
+    cat.subcategories = cat.subcategories || [];
+    const slug = slugify(name);
+    if (cat.subcategories.some(s=>s.slug===slug)) { alert('Já existe uma subcategoria com esse nome nesta categoria.'); return; }
+    cat.subcategories.push({ slug, name });
+    AdminStore.set('categories', cats);
+    openSubs.add(i);
+    render();
+  }
+  function editSub(i,j){
+    const cats = AdminStore.get('categories'); const sub = cats[i].subcategories[j];
+    const name = prompt('Nome da subcategoria:', sub.name); if (name===null) return;
+    sub.name = name; AdminStore.set('categories', cats); render();
+  }
+  function delSub(i,j){
+    if (!confirm('Excluir esta subcategoria? Produtos cadastrados nela continuarão existindo, só perdem a subcategoria.')) return;
+    const cats = AdminStore.get('categories'); cats[i].subcategories.splice(j,1); AdminStore.set('categories', cats); render();
+  }
+  window.toggleSubs = toggleSubs;
+  window.addSub = addSub;
+  window.editSub = editSub;
+  window.delSub = delSub;
   document.addEventListener('DOMContentLoaded', render);
 
   c.innerHTML = `
@@ -48,15 +111,16 @@
         <h3 style="margin:0">Todas as Categorias</h3>
         <button class="btn btn-gold btn-sm" onclick="addCat()">${AICO.plus} Nova Categoria</button>
       </div>
+      <p style="font-size:12.5px;color:#999;margin-bottom:14px">Clique em "N subcategorias" numa linha para ver, adicionar, editar ou excluir as subcategorias daquela categoria (ex.: categoria Casa → subcategoria Banheiro).</p>
       <table class="admin-table">
-        <thead><tr><th></th><th>Nome</th><th>Slug</th><th>Descrição</th><th>Produtos</th><th>Ações</th></tr></thead>
+        <thead><tr><th></th><th>Nome</th><th>Slug</th><th>Descrição</th><th>Produtos</th><th>Subcategorias</th><th>Ações</th></tr></thead>
         <tbody id="catTbody"></tbody>
       </table>
     </div>`;
   function addCat(){
     const name = prompt('Nome da nova categoria:'); if (!name) return;
     const cats = AdminStore.get('categories');
-    cats.push({ slug: name.toLowerCase().replace(/\s+/g,'-'), name, desc: 'Nova categoria' });
+    cats.push({ slug: slugify(name), name, desc: 'Nova categoria', subcategories: [] });
     AdminStore.set('categories', cats); render();
   }
   render();

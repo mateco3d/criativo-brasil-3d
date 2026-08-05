@@ -63,7 +63,8 @@
     const o = allOrders.find(x=>x.id===id);
     if (!o) return;
     const itens = (o.itemsDetail||[]).map(it => `${it.qty}x ${it.name}`).join('\n') || '—';
-    alert(`Pedido ${o.id}\nCliente: ${o.cliente||'—'} (${o.email||'—'})\nTelefone: ${o.telefone||'—'}\nStatus: ${o.status}\nTotal: ${formatBRL(o.total)}\n\nItens:\n${itens}`);
+    const rastreio = o.tracking_code ? `\nCódigo de rastreio: ${o.tracking_code}` : '';
+    alert(`Pedido ${o.id}\nCliente: ${o.cliente||'—'} (${o.email||'—'})\nTelefone: ${o.telefone||'—'}\nStatus: ${o.status}\nTotal: ${formatBRL(o.total)}${rastreio}\n\nItens:\n${itens}`);
   }
 
   // -------------------------------------------------------------------
@@ -157,10 +158,50 @@
     });
   }
   window.abrirPostagem = abrirPostagem;
+
+  // -------------------------------------------------------------------
+  // Ao marcar um pedido como "Enviado", abre um pequeno formulário para
+  // colar o código de rastreio dos Correios. Se um e-mail for salvo no
+  // pedido, isso dispara automaticamente um e-mail para o cliente com o
+  // código e o link de rastreamento (ver api/_email.js → sendShippedEmail).
+  // O admin pode pular essa etapa e preencher depois, se ainda não tiver
+  // o código em mãos (ex.: ainda não comprou a etiqueta na Melhor Envio).
+  function abrirRastreio(id){
+    const o = allOrders.find(x=>x.id===id);
+    if (!o) return;
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:14px;max-width:420px;width:100%;padding:26px">
+        <h3 style="margin:0 0 4px">Pedido marcado como Enviado — ${o.id}</h3>
+        <p style="font-size:12.5px;color:var(--gray-500);margin:0 0 16px">Cole o código de rastreio dos Correios (gerado na Melhor Envio) para avisar o cliente automaticamente por e-mail. Pode deixar em branco e preencher depois.</p>
+        <label style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px">Código de rastreio</label>
+        <input id="rastreioInput" type="text" placeholder="Ex: AA123456789BR" value="${o.tracking_code || ''}" style="width:100%;padding:11px 13px;border-radius:9px;border:1.5px solid #e2e2e2;font-size:13.5px;margin-bottom:16px;box-sizing:border-box">
+        ${!o.email ? '<p style="font-size:11.5px;color:var(--red);margin:0 0 16px">Este pedido não tem e-mail salvo — não será possível notificar automaticamente, mesmo salvando o código.</p>' : ''}
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-gold" style="flex:1" id="salvarRastreioBtn">${o.email ? 'Salvar e notificar cliente' : 'Salvar código'}</button>
+          <button class="btn btn-ghost" id="pularRastreioBtn">Pular por agora</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e)=>{ if (e.target === modal) modal.remove(); });
+    modal.querySelector('#pularRastreioBtn').addEventListener('click', ()=> modal.remove());
+    modal.querySelector('#salvarRastreioBtn').addEventListener('click', async ()=>{
+      const code = modal.querySelector('#rastreioInput').value.trim();
+      modal.remove();
+      if (!code) return;
+      await updateOrderStatus(id, 'Enviado', code);
+      o.tracking_code = code;
+      showToast(o.email ? 'Cliente notificado!' : 'Código salvo', o.email ? 'E-mail com o código de rastreio foi enviado.' : 'Este pedido não tem e-mail salvo para notificar.');
+    });
+  }
+  window.abrirRastreio = abrirRastreio;
+
   async function changeStatus(id, status){
     const o = allOrders.find(x=>x.id===id); if (o) o.status = status;
     render(document.getElementById('statusFilter').value);
     await updateOrderStatus(id, status);
+    if (status === 'Enviado') abrirRastreio(id);
   }
   window.changeStatus = changeStatus;
   window.verDetalhes = verDetalhes;

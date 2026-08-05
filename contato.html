@@ -36,7 +36,7 @@
         </ul>
         <div id="contactInfo"></div>
       </div>
-      <a href="https://wa.me/5511912345678" target="_blank" class="btn btn-black btn-block" style="margin-bottom:12px">Chamar no WhatsApp</a>
+      <a href="#" id="waContactBtn" target="_blank" class="btn btn-black btn-block" style="margin-bottom:12px">Chamar no WhatsApp</a>
       <div class="card" style="background:var(--black);color:#fff">
         <h4 style="color:var(--gold);margin-bottom:10px">Horário de Atendimento</h4>
         <p style="font-size:13.5px;color:var(--gray-300)">Segunda a Sexta: 9h às 18h<br>Sábado: 9h às 13h</p>
@@ -51,8 +51,9 @@
   mountLayout(null);
   document.getElementById('contactInfo').innerHTML = `
     <div style="display:flex;gap:10px;margin-bottom:14px;font-size:13.5px"><span style="color:var(--gold-dark)">${ICO.pin}</span> São Paulo, SP — Envios para todo o Brasil</div>
-    <div style="display:flex;gap:10px;margin-bottom:14px;font-size:13.5px"><span style="color:var(--gold-dark)">${ICO.phone}</span> (11) 91234-5678</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;font-size:13.5px"><span style="color:var(--gold-dark)">${ICO.phone}</span> ${STORE_PHONE_DISPLAY}</div>
     <div style="display:flex;gap:10px;font-size:13.5px"><span style="color:var(--gold-dark)">${ICO.mail}</span> <a href="mailto:criativo3dbrasil@gmail.com" style="color:inherit">criativo3dbrasil@gmail.com</a></div>`;
+  document.getElementById('waContactBtn').href = waLink('Olá! Vim pelo site e gostaria de saber mais sobre os produtos.');
 </script>
 </body>
 </html>

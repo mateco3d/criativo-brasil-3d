@@ -86,5 +86,23 @@ module.exports = async function handler(req, res) {
     return;
   }
 
+  if (req.method === 'DELETE') {
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch (e) { body = null; }
+    }
+    // Apaga TODOS os pedidos (e itens, via ON DELETE CASCADE). Ação
+    // irreversível — por isso exige essa frase exata no corpo da
+    // requisição, digitada pelo admin (ver admin/pedidos.html), além do
+    // Basic Auth do painel. Sem isso, o endpoint não apaga nada.
+    if (!body || body.confirm !== 'APAGAR TODOS OS PEDIDOS') {
+      res.status(400).json({ error: 'Confirmação inválida. Envie { confirm: "APAGAR TODOS OS PEDIDOS" }.' });
+      return;
+    }
+    const { rowCount } = await sql`DELETE FROM orders`;
+    res.status(200).json({ ok: true, deleted: rowCount });
+    return;
+  }
+
   res.status(405).json({ error: 'Método não permitido.' });
 };

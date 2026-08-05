@@ -263,7 +263,58 @@
           <tbody id="ordTbody"><tr><td colspan="7" style="text-align:center;color:#999;padding:30px">Carregando pedidos...</td></tr></tbody>
         </table>
       </div>
+    </div>
+
+    <div class="admin-panel" style="border:1.5px solid #f3c9c9;background:#fff8f8;margin-top:20px">
+      <h3 style="margin:0 0 6px;color:var(--red,#c0392b)">Zona de Risco</h3>
+      <p style="font-size:12.5px;color:#8a4a4a;margin:0 0 14px">Apaga permanentemente TODOS os pedidos do banco de dados (não afeta produtos nem categorias). Use isto só quando quiser zerar os pedidos de teste antes de começar a vender de verdade. Esta ação não pode ser desfeita.</p>
+      <button class="btn btn-black" style="background:var(--red,#c0392b)" onclick="abrirApagarPedidos()">Apagar todos os pedidos</button>
     </div>`;
+
+  // -------------------------------------------------------------------
+  // Apagar todos os pedidos é uma ação irreversível sobre dados reais do
+  // banco — por isso o admin precisa digitar a frase exata de confirmação
+  // (o servidor também exige essa mesma frase no corpo da requisição, ver
+  // api/orders.js). Sem digitar certinho, nada é apagado.
+  const FRASE_CONFIRMACAO = 'APAGAR TODOS OS PEDIDOS';
+  function abrirApagarPedidos(){
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:14px;max-width:460px;width:100%;padding:26px">
+        <h3 style="margin:0 0 4px;color:var(--red,#c0392b)">Apagar todos os pedidos</h3>
+        <p style="font-size:12.5px;color:var(--gray-500);margin:0 0 14px">Isso vai apagar permanentemente todos os ${allOrders.length} pedido(s) atualmente salvos no banco de dados. Não pode ser desfeito. Para confirmar, digite exatamente:</p>
+        <p style="font-size:13px;font-weight:700;background:#f4f4f4;border-radius:8px;padding:8px 12px;margin:0 0 14px;user-select:all">${FRASE_CONFIRMACAO}</p>
+        <input id="confirmApagarInput" type="text" placeholder="Digite a frase acima" style="width:100%;padding:11px 13px;border-radius:9px;border:1.5px solid #e2e2e2;font-size:13.5px;margin-bottom:16px;box-sizing:border-box">
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" style="flex:1" id="cancelarApagarBtn">Cancelar</button>
+          <button class="btn btn-black" style="flex:1;background:var(--red,#c0392b)" id="confirmarApagarBtn">Apagar definitivamente</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e)=>{ if (e.target === modal) modal.remove(); });
+    modal.querySelector('#cancelarApagarBtn').addEventListener('click', ()=> modal.remove());
+    modal.querySelector('#confirmarApagarBtn').addEventListener('click', async ()=>{
+      const digitado = modal.querySelector('#confirmApagarInput').value.trim();
+      if (digitado !== FRASE_CONFIRMACAO) {
+        showToast('Frase incorreta', 'Digite exatamente "' + FRASE_CONFIRMACAO + '" para confirmar.');
+        return;
+      }
+      const btn = modal.querySelector('#confirmarApagarBtn');
+      btn.disabled = true; btn.textContent = 'Apagando...';
+      const result = await deleteAllOrders(digitado);
+      modal.remove();
+      if (result.ok) {
+        allOrders = [];
+        render();
+        refreshOrderBadge();
+        showToast('Pedidos apagados', (result.deleted||0) + ' pedido(s) removido(s) do banco de dados.');
+      } else {
+        showToast('Não foi possível apagar', result.error || 'Tente novamente.');
+      }
+    });
+  }
+  window.abrirApagarPedidos = abrirApagarPedidos;
 
   (async function init(){
     allOrders = await fetchOrders();

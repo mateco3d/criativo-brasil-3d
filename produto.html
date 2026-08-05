@@ -142,6 +142,13 @@
   document.getElementById('bcCat').textContent = catObj.name;
   document.getElementById('bcCat').href = `produtos.html?cat=${p.cat}`;
   document.getElementById('bcName').textContent = p.name;
+  // Se o produto tiver subcategoria (ex.: Casa > Banheiro), mostra um
+  // terceiro nível no breadcrumb entre a categoria e o nome do produto.
+  const subObj = p.subcat && catObj.subcategories && catObj.subcategories.find(s=>s.slug===p.subcat);
+  if (subObj) {
+    document.getElementById('bcCat').insertAdjacentHTML('afterend',
+      `<span class="sep">/</span><a href="produtos.html?cat=${p.cat}&subcat=${p.subcat}">${subObj.name}</a>`);
+  }
 
   document.getElementById('pdMain').innerHTML = iconFor(p.cat);
   document.getElementById('pdThumbs').innerHTML = Array.from({length:4}).map((_,i)=>`<div class="pd-thumb ${i===0?'active':''}">${iconFor(p.cat)}</div>`).join('');

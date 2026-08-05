@@ -84,8 +84,14 @@
 <script>
   mountLayout('produtos.html');
 
+  // Subcategorias aparecem indentadas logo abaixo da categoria a que
+  // pertencem (ex.: "Casa" > "Banheiro"). O valor do checkbox de
+  // subcategoria é "categoria::subcategoria" para não colidir caso duas
+  // categorias diferentes tenham uma subcategoria com o mesmo slug.
   document.getElementById('catFilters').innerHTML = CATEGORIES.map(c => `
-    <label class="filter-opt"><input type="checkbox" class="catFilter" value="${c.slug}"> ${c.name}</label>`).join('');
+    <label class="filter-opt"><input type="checkbox" class="catFilter" value="${c.slug}"> ${c.name}</label>
+    ${(c.subcategories||[]).map(s=>`<label class="filter-opt" style="padding-left:20px;font-size:12.5px"><input type="checkbox" class="subcatFilter" value="${c.slug}::${s.slug}"> ${s.name}</label>`).join('')}`
+  ).join('');
 
   const params = new URLSearchParams(location.search);
   if (params.get('cat')) {
@@ -93,6 +99,14 @@
     if (cb) cb.checked = true;
     const cat = CATEGORIES.find(c=>c.slug===params.get('cat'));
     if (cat) { document.getElementById('pageTitle').textContent = cat.name; document.getElementById('pageSub').textContent = cat.desc; document.getElementById('bcCurrent').textContent = cat.name; }
+    if (params.get('subcat')) {
+      const scb = document.querySelector(`.subcatFilter[value="${params.get('cat')}::${params.get('subcat')}"]`);
+      if (scb) {
+        scb.checked = true;
+        const sub = (cat && cat.subcategories || []).find(s=>s.slug===params.get('subcat'));
+        if (sub) { document.getElementById('pageTitle').textContent = sub.name; document.getElementById('bcCurrent').textContent = sub.name; }
+      }
+    }
   }
   if (params.get('filter')) {
     const cb = document.querySelector(`.tagFilter[value="${params.get('filter')}"]`);
@@ -102,6 +116,7 @@
 
   function applyFilters(){
     const cats = [...document.querySelectorAll('.catFilter:checked')].map(c=>c.value);
+    const subcats = [...document.querySelectorAll('.subcatFilter:checked')].map(c=>c.value);
     const tags = [...document.querySelectorAll('.tagFilter:checked')].map(c=>c.value);
     const min = parseFloat(document.getElementById('minPrice').value) || 0;
     const max = parseFloat(document.getElementById('maxPrice').value) || Infinity;
@@ -111,6 +126,7 @@
     let list = PRODUCTS.filter(p => {
       const price = p.promo || p.price;
       if (cats.length && !cats.includes(p.cat)) return false;
+      if (subcats.length && !subcats.includes(`${p.cat}::${p.subcat||''}`)) return false;
       if (tags.length && !tags.some(t=>p.tags.includes(t))) return false;
       if (price < min || price > max) return false;
       if (q && !(p.name.toLowerCase().includes(q) || p.cat.includes(q) || p.short.toLowerCase().includes(q))) return false;
@@ -127,13 +143,13 @@
     document.getElementById('emptyState').style.display = list.length ? 'none' : 'block';
   }
   function clearFilters(){
-    document.querySelectorAll('.catFilter,.tagFilter').forEach(c=>c.checked=false);
+    document.querySelectorAll('.catFilter,.subcatFilter,.tagFilter').forEach(c=>c.checked=false);
     document.getElementById('minPrice').value=''; document.getElementById('maxPrice').value='';
     document.getElementById('sortSelect').value='relevance';
     history.replaceState(null,'','produtos.html');
     applyFilters();
   }
-  document.querySelectorAll('.catFilter,.tagFilter').forEach(c=>c.addEventListener('change', applyFilters));
+  document.querySelectorAll('.catFilter,.subcatFilter,.tagFilter').forEach(c=>c.addEventListener('change', applyFilters));
   applyFilters();
 </script>
 </body>

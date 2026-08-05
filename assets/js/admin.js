@@ -94,9 +94,11 @@ async function fetchOrders(){
     }));
   } catch (e) { return []; }
 }
-async function updateOrderStatus(id, status){
+async function updateOrderStatus(id, status, trackingCode){
   try {
-    await fetch('/api/orders', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, status }) });
+    const body = { id, status };
+    if (trackingCode) body.trackingCode = trackingCode;
+    await fetch('/api/orders', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
   } catch (e) { /* falha silenciosa — o painel tenta de novo na próxima ação */ }
 }
 async function markOrdersSeen(){

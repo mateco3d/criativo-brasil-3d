@@ -106,6 +106,20 @@ async function markOrdersSeen(){
     await fetch('/api/orders', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ markAllSeen:true }) });
   } catch (e) {}
 }
+// Apaga TODOS os pedidos do banco (irreversível). Só funciona se o texto
+// digitado pelo admin bater exatamente com a frase de confirmação exigida
+// pelo servidor (ver api/orders.js) — proteção extra além do Basic Auth,
+// já que esta ação não pode ser desfeita.
+async function deleteAllOrders(confirmText){
+  const res = await fetch('/api/orders', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ confirm: confirmText }),
+  });
+  const data = await res.json().catch(()=>({}));
+  return { ok: res.ok, ...data };
+}
+
 async function refreshOrderBadge(){
   const badge = document.getElementById('navOrdersBadge');
   if (!badge) return;

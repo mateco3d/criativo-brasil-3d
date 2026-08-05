@@ -18,15 +18,20 @@ const ICONS = {
 function iconFor(cat){ return ICONS[cat] || ICONS.personalizados; }
 
 // ---------- Categorias ----------
+// Cada categoria pode ter subcategorias (ex.: categoria "Casa" > subcategoria
+// "Banheiro"). Cadastradas pelo admin em admin/categorias.html. O campo
+// `subcategories` é sempre um array (pode ser vazio) de { slug, name }.
 const CATEGORIES = [
-  { slug: 'geek', name: 'Geek', desc: 'Nerd, games e cultura pop' },
-  { slug: 'funko', name: 'Funko', desc: 'Personalizados e colecionáveis' },
-  { slug: 'organizacao', name: 'Organização', desc: 'Praticidade pro dia a dia' },
-  { slug: 'casa', name: 'Casa', desc: 'Decoração e utilidades' },
-  { slug: 'escritorio', name: 'Escritório', desc: 'Home office com estilo' },
-  { slug: 'narguile', name: 'Narguile', desc: 'Acessórios exclusivos' },
-  { slug: 'automotivo', name: 'Automotivo', desc: 'Peças e acessórios' },
-  { slug: 'personalizados', name: 'Personalizados', desc: 'Feito sob medida' },
+  { slug: 'geek', name: 'Geek', desc: 'Nerd, games e cultura pop', subcategories: [] },
+  { slug: 'funko', name: 'Funko', desc: 'Personalizados e colecionáveis', subcategories: [] },
+  { slug: 'organizacao', name: 'Organização', desc: 'Praticidade pro dia a dia', subcategories: [] },
+  { slug: 'casa', name: 'Casa', desc: 'Decoração e utilidades', subcategories: [
+    { slug: 'banheiro', name: 'Banheiro' },
+  ] },
+  { slug: 'escritorio', name: 'Escritório', desc: 'Home office com estilo', subcategories: [] },
+  { slug: 'narguile', name: 'Narguile', desc: 'Acessórios exclusivos', subcategories: [] },
+  { slug: 'automotivo', name: 'Automotivo', desc: 'Peças e acessórios', subcategories: [] },
+  { slug: 'personalizados', name: 'Personalizados', desc: 'Feito sob medida', subcategories: [] },
 ];
 
 // ---------- Produtos ----------

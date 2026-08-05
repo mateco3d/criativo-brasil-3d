@@ -51,6 +51,11 @@ async function ensureSchema() {
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS cidade TEXT`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS uf TEXT`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_label TEXT`;
+  // Código de rastreio dos Correios — preenchido pelo admin ao marcar o
+  // pedido como "Enviado" (ver admin/pedidos.html). Quando esse valor muda,
+  // api/orders.js dispara um e-mail automático para o cliente (ver
+  // api/_email.js → sendShippedEmail).
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_code TEXT`;
   await sql`
     CREATE TABLE IF NOT EXISTS order_items (
       id SERIAL PRIMARY KEY,

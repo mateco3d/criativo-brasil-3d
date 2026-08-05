@@ -10,6 +10,7 @@
 
 const { sql, ensureSchema } = require('./_db');
 const { requireAdmin } = require('./_auth');
+const { sendShippedEmail } = require('./_email');
 
 module.exports = async function handler(req, res) {
   if (!requireAdmin(req, res)) return;
@@ -19,7 +20,8 @@ module.exports = async function handler(req, res) {
     const { rows: orders } = await sql`
       SELECT id, cliente, email, telefone, total, subtotal, shipping, discount,
              status, mp_payment_id, mp_status, seen, created_at, updated_at,
-             cpf, cep, rua, numero, complemento, bairro, cidade, uf, shipping_label
+             cpf, cep, rua, numero, complemento, bairro, cidade, uf, shipping_label,
+             tracking_code
       FROM orders
       ORDER BY created_at DESC
       LIMIT 300
@@ -61,6 +63,24 @@ module.exports = async function handler(req, res) {
     }
     if (body.seen !== undefined) {
       await sql`UPDATE orders SET seen = ${body.seen} WHERE id = ${body.id}`;
+    }
+    // Código de rastreio: só grava (e só notifica o cliente por e-mail) se o
+    // valor for realmente novo/diferente do que já estava salvo — evita
+    // reenviar o e-mail toda vez que o admin salvar o mesmo pedido de novo.
+    if (body.trackingCode !== undefined && String(body.trackingCode).trim() !== '') {
+      const code = String(body.trackingCode).trim();
+      const { rows } = await sql`
+        UPDATE orders SET tracking_code = ${code}, updated_at = now()
+        WHERE id = ${body.id} AND tracking_code IS DISTINCT FROM ${code}
+        RETURNING id, cliente, email, tracking_code
+      `;
+      if (rows[0] && rows[0].email) {
+        try {
+          await sendShippedEmail(rows[0]);
+        } catch (mailErr) {
+          console.log('Falha ao enviar e-mail de rastreio:', mailErr);
+        }
+      }
     }
     res.status(200).json({ ok: true });
     return;

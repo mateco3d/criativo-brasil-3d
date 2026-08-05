@@ -2,6 +2,20 @@
    CRIATIVO BRASIL 3D — Core JS (header/footer, carrinho, busca, UI)
 =================================================================== */
 
+/* ---------------- Contato / WhatsApp da loja ----------------
+   Único lugar para configurar o número de WhatsApp da loja. Troque os
+   dois valores abaixo pelos reais e todo o site atualiza sozinho: botão
+   flutuante do WhatsApp, ícone do rodapé, botão e telefone exibidos na
+   página Contato.
+   - STORE_WHATSAPP: só dígitos, com código do país (55) + DDD + número.
+   - STORE_PHONE_DISPLAY: o mesmo número, formatado para exibição.
+*/
+const STORE_WHATSAPP = '5511912345678'; // TODO: troque pelo número real da loja
+const STORE_PHONE_DISPLAY = '(11) 91234-5678'; // TODO: troque pelo telefone formatado
+function waLink(text){
+  return `https://wa.me/${STORE_WHATSAPP}${text ? '?text=' + encodeURIComponent(text) : ''}`;
+}
+
 /* ---------------- Ícones utilitários ---------------- */
 const ICO = {
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
@@ -117,7 +131,7 @@ function footerHTML(){
         <div class="footer-social">
           <a href="#" aria-label="Instagram">${ICO.insta}</a>
           <a href="#" aria-label="Facebook">${ICO.fb}</a>
-          <a href="#" aria-label="WhatsApp">${ICO.whatsapp}</a>
+          <a href="${waLink()}" target="_blank" aria-label="WhatsApp">${ICO.whatsapp}</a>
         </div>
       </div>
       <div class="footer-col">
@@ -147,7 +161,7 @@ function footerHTML(){
         <h5>Contato</h5>
         <ul class="footer-contact">
           <li>${ICO.pin}<span>São Paulo, SP — Envios para todo o Brasil</span></li>
-          <li>${ICO.phone}<span>(11) 91234-5678</span></li>
+          <li>${ICO.phone}<span>${STORE_PHONE_DISPLAY}</span></li>
           <li>${ICO.mail}<span><a href="mailto:criativo3dbrasil@gmail.com" style="color:inherit">criativo3dbrasil@gmail.com</a></span></li>
         </ul>
       </div>
@@ -165,7 +179,7 @@ function footerHTML(){
 
 function floatButtonsHTML(){
   return `
-  <a href="https://wa.me/5511912345678" target="_blank" class="whatsapp-float" aria-label="WhatsApp">${ICO.whatsapp}</a>
+  <a href="${waLink()}" target="_blank" class="whatsapp-float" aria-label="WhatsApp">${ICO.whatsapp}</a>
   <button class="back-top" id="backTopBtn" aria-label="Voltar ao topo">${ICO.top}</button>
   <div class="minicart-overlay" id="minicartOverlay"></div>
   <aside class="minicart" id="minicart">

@@ -106,7 +106,7 @@ header.site-header {
 header.site-header.scrolled { box-shadow: 0 4px 20px rgba(0,0,0,.06); }
 .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 16px 24px; max-width: var(--maxw); margin: 0 auto; }
 .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; letter-spacing: -0.02em; min-width: 0; flex-shrink: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.logo .mark { height: 40px; width: auto; object-fit: contain; display: block; flex-shrink: 0; }
+.logo .mark { height: 40px; width: auto; object-fit: contain; display: block; flex-shrink: 0; transform: translateY(-13%); }
 .logo .brand-sub { display: block; font-size: 10px; font-weight: 600; letter-spacing: .18em; color: var(--gray-500); text-transform: uppercase; }
 .main-nav { display: flex; gap: 30px; }
 .main-nav a { font-weight: 600; font-size: 14.5px; position: relative; padding: 6px 0; }

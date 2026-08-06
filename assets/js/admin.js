@@ -48,7 +48,7 @@ function adminLayout(active, title, subtitle){
   document.body.insertAdjacentHTML('afterbegin', `
     <div class="admin-shell">
       <aside class="admin-sidebar" id="adminSidebar">
-        <div class="admin-logo"><span class="mark">CB</span> Criativo Brasil 3D<br><small style="font-weight:400;color:#888;font-size:10px">Painel Admin</small></div>
+        <div class="admin-logo"><img class="mark" src="../assets/img/logo.png" alt="Criativo Brasil 3D"> Criativo Brasil 3D<br><small style="font-weight:400;color:#888;font-size:10px">Painel Admin</small></div>
         <nav class="admin-nav">${nav}</nav>
         <a href="../index.html" class="admin-back">← Voltar para a loja</a>
       </aside>

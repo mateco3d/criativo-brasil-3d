@@ -93,7 +93,7 @@ function headerHTML(){
     <div class="header-inner">
       <button class="burger btn-icon" id="burgerBtn" aria-label="Menu">${ICO.menu}</button>
       <a href="index.html" class="logo">
-        <span class="mark">CB</span>
+        <img class="mark" src="assets/img/logo.png" alt="Criativo Brasil 3D">
         <span>Criativo Brasil<span class="brand-sub">Impressão 3D</span></span>
       </a>
       <nav class="main-nav" id="mainNav">
@@ -124,7 +124,7 @@ function footerHTML(){
     <div class="container footer-top">
       <div class="footer-brand">
         <a href="index.html" class="logo" style="color:#fff">
-          <span class="mark">CB</span>
+          <img class="mark" src="assets/img/logo.png" alt="Criativo Brasil 3D">
           <span>Criativo Brasil<span class="brand-sub" style="color:#FFC107">Impressão 3D</span></span>
         </a>
         <p>Produção própria de peças em impressão 3D com qualidade premium. Do geek ao automotivo, transformamos ideias em objetos reais.</p>

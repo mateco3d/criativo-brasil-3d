@@ -368,7 +368,7 @@ function renderHero(mountId){
     <div class="hero">
       ${BANNERS.map((b,i)=>`
         <div class="hero-slide ${i===0?'active':''}" data-i="${i}">
-          <div class="bg" style="background:linear-gradient(120deg,${grad[i%grad.length]})"></div>
+          <div class="bg" style="${b.img ? `background-image:url('${b.img}')` : `background:linear-gradient(120deg,${grad[i%grad.length]})`}"></div>
           <div class="overlay"></div>
           <div class="hero-content">
             <span class="tag">${b.tag}</span>

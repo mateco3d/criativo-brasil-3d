@@ -56,6 +56,13 @@ async function ensureSchema() {
   // api/orders.js dispara um e-mail automático para o cliente (ver
   // api/_email.js → sendShippedEmail).
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_code TEXT`;
+  // Colunas da PagBank — adicionadas na migração de saída do Mercado Pago
+  // (ver api/create-checkout-pagbank.js e api/pagbank-webhook.js). As
+  // colunas mp_* antigas continuam na tabela só para não perder o
+  // histórico dos pedidos já pagos pelo Mercado Pago antes da troca.
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pagbank_checkout_id TEXT`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pagbank_order_id TEXT`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pagbank_status TEXT`;
   await sql`
     CREATE TABLE IF NOT EXISTS order_items (
       id SERIAL PRIMARY KEY,

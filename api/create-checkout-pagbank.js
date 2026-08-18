@@ -43,14 +43,20 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const token = process.env.PAGBANK_TOKEN;
-  const apiBase = process.env.PAGBANK_SANDBOX === 'true'
-    ? 'https://sandbox.api.pagseguro.com'
-    : 'https://api.pagseguro.com';
+  // Modo sandbox só é ativado explicitamente via ?sandbox=1 na URL — nunca
+  // por uma variável de ambiente global. Isso evita que o checkout real da
+  // loja vá parar no sandbox por engano; é só pra eu (ou o usuário) testar
+  // a integração manualmente antes da homologação da PagBank liberar a
+  // conta em produção. Usa um token separado (PAGBANK_SANDBOX_TOKEN) pra
+  // nunca precisar trocar o PAGBANK_TOKEN de produção durante o teste.
+  const isSandbox = req.query && req.query.sandbox === '1';
+  const token = isSandbox ? process.env.PAGBANK_SANDBOX_TOKEN : process.env.PAGBANK_TOKEN;
+  const apiBase = isSandbox ? 'https://sandbox.api.pagseguro.com' : 'https://api.pagseguro.com';
 
   if (!token) {
+    const varName = isSandbox ? 'PAGBANK_SANDBOX_TOKEN' : 'PAGBANK_TOKEN';
     res.status(500).json({
-      error: 'PAGBANK_TOKEN não configurado no servidor. Adicione essa variável de ambiente nas configurações do projeto no Vercel e faça um novo deploy.',
+      error: `${varName} não configurado no servidor. Adicione essa variável de ambiente nas configurações do projeto no Vercel e faça um novo deploy.`,
     });
     return;
   }
@@ -163,6 +169,11 @@ module.exports = async function handler(req, res) {
   };
 
   try {
+    // Loga a requisição e a resposta completas (sem o token) — útil pra
+    // pegar do painel de Logs do Vercel e anexar no formulário de
+    // homologação da PagBank (pedem request/response de sandbox/produção).
+    console.log(`[PagBank ${isSandbox ? 'SANDBOX' : 'PRODUÇÃO'}] Request POST ${apiBase}/checkouts:`, JSON.stringify(checkoutBody));
+
     const pbRes = await fetch(`${apiBase}/checkouts`, {
       method: 'POST',
       headers: {
@@ -173,6 +184,8 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify(checkoutBody),
     });
     const data = await pbRes.json();
+    console.log(`[PagBank ${isSandbox ? 'SANDBOX' : 'PRODUÇÃO'}] Response ${pbRes.status}:`, JSON.stringify(data));
+
     if (!pbRes.ok) {
       res.status(pbRes.status).json({ error: (data && (data.error_messages || data.message)) || 'Erro ao criar checkout na PagBank.', details: data });
       return;

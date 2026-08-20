@@ -12,6 +12,49 @@ const { sql, ensureSchema } = require('./_db');
 const { requireAdmin } = require('./_auth');
 const { sendShippedEmail } = require('./_email');
 
+/* -------------------------------------------------------------------
+   Tenta enviar (ou reenviar) o e-mail de rastreio para o pedido `orderId`
+   e sempre grava o resultado no próprio pedido (tracking_email_status /
+   tracking_email_sent_at / tracking_email_error), para o painel poder
+   mostrar se realmente foi entregue ao Gmail ou se falhou — antes disso
+   isso só dava para saber checando manualmente a caixa "Enviados" do
+   Gmail da loja ou os Logs do Vercel.
+   Retorna { status: 'sent'|'failed'|'no_email'|'no_tracking_code', error? }.
+------------------------------------------------------------------- */
+async function tentarEnviarRastreio(orderId) {
+  const { rows } = await sql`
+    SELECT id, cliente, email, tracking_code FROM orders WHERE id = ${orderId}
+  `;
+  const order = rows[0];
+  if (!order) return { status: 'not_found' };
+  if (!order.tracking_code) return { status: 'no_tracking_code' };
+  if (!order.email) {
+    await sql`
+      UPDATE orders SET tracking_email_status = 'no_email', tracking_email_error = NULL
+      WHERE id = ${orderId}
+    `;
+    return { status: 'no_email' };
+  }
+  try {
+    await sendShippedEmail(order);
+    await sql`
+      UPDATE orders
+      SET tracking_email_status = 'sent', tracking_email_sent_at = now(), tracking_email_error = NULL
+      WHERE id = ${orderId}
+    `;
+    return { status: 'sent' };
+  } catch (mailErr) {
+    const errorMsg = String((mailErr && mailErr.message) || mailErr).slice(0, 500);
+    console.log('Falha ao enviar e-mail de rastreio:', mailErr);
+    await sql`
+      UPDATE orders
+      SET tracking_email_status = 'failed', tracking_email_sent_at = now(), tracking_email_error = ${errorMsg}
+      WHERE id = ${orderId}
+    `;
+    return { status: 'failed', error: errorMsg };
+  }
+}
+
 module.exports = async function handler(req, res) {
   if (!requireAdmin(req, res)) return;
   await ensureSchema();
@@ -21,7 +64,7 @@ module.exports = async function handler(req, res) {
       SELECT id, cliente, email, telefone, total, subtotal, shipping, discount,
              status, mp_payment_id, mp_status, seen, created_at, updated_at,
              cpf, cep, rua, numero, complemento, bairro, cidade, uf, shipping_label,
-             tracking_code
+             tracking_code, tracking_email_status, tracking_email_sent_at, tracking_email_error
       FROM orders
       ORDER BY created_at DESC
       LIMIT 300
@@ -58,6 +101,15 @@ module.exports = async function handler(req, res) {
 
     if (!body.id) { res.status(400).json({ error: 'id é obrigatório.' }); return; }
 
+    // Reenvio manual do e-mail de rastreio (botão "Reenviar e-mail" no
+    // painel, usado quando o envio automático falhou ou quando o admin
+    // salvou o e-mail do cliente depois de já ter marcado como enviado).
+    if (body.resendTrackingEmail) {
+      const trackingEmail = await tentarEnviarRastreio(body.id);
+      res.status(200).json({ ok: true, trackingEmail });
+      return;
+    }
+
     if (body.status) {
       await sql`UPDATE orders SET status = ${body.status}, updated_at = now() WHERE id = ${body.id}`;
     }
@@ -67,22 +119,19 @@ module.exports = async function handler(req, res) {
     // Código de rastreio: só grava (e só notifica o cliente por e-mail) se o
     // valor for realmente novo/diferente do que já estava salvo — evita
     // reenviar o e-mail toda vez que o admin salvar o mesmo pedido de novo.
+    let trackingEmail;
     if (body.trackingCode !== undefined && String(body.trackingCode).trim() !== '') {
       const code = String(body.trackingCode).trim();
       const { rows } = await sql`
         UPDATE orders SET tracking_code = ${code}, updated_at = now()
         WHERE id = ${body.id} AND tracking_code IS DISTINCT FROM ${code}
-        RETURNING id, cliente, email, tracking_code
+        RETURNING id
       `;
-      if (rows[0] && rows[0].email) {
-        try {
-          await sendShippedEmail(rows[0]);
-        } catch (mailErr) {
-          console.log('Falha ao enviar e-mail de rastreio:', mailErr);
-        }
+      if (rows[0]) {
+        trackingEmail = await tentarEnviarRastreio(body.id);
       }
     }
-    res.status(200).json({ ok: true });
+    res.status(200).json({ ok: true, trackingEmail });
     return;
   }
 

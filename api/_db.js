@@ -56,6 +56,18 @@ async function ensureSchema() {
   // api/orders.js dispara um e-mail automático para o cliente (ver
   // api/_email.js → sendShippedEmail).
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_code TEXT`;
+  // Status do e-mail de rastreio enviado ao CLIENTE (ver api/orders.js e
+  // api/_email.js → sendShippedEmail). Antes disso, o painel não tinha
+  // como saber se o e-mail realmente saiu ou falhou silenciosamente — só
+  // dava para checar manualmente a caixa "Enviados" do Gmail da loja ou os
+  // Logs do Vercel. Agora fica salvo no próprio pedido:
+  //   'sent'     → e-mail enviado com sucesso (ver tracking_email_sent_at)
+  //   'failed'   → tentativa de envio falhou (ver tracking_email_error)
+  //   'no_email' → pedido não tem e-mail do cliente salvo, nunca tentou
+  //   NULL       → ainda não houve tentativa de envio (nenhum código salvo ainda)
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_email_status TEXT`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_email_sent_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_email_error TEXT`;
   // Colunas da PagBank — adicionadas na migração de saída do Mercado Pago
   // (ver api/create-checkout-pagbank.js e api/pagbank-webhook.js). As
   // colunas mp_* antigas continuam na tabela só para não perder o

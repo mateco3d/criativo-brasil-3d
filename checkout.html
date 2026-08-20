@@ -137,7 +137,7 @@
   function renderItems(){
     const lines = Cart.lines();
     document.getElementById('checkoutItems').innerHTML = lines.map(l => `
-      <div class="summary-mini-item"><span>${l.qty}x ${l.product.name}</span><span>${formatBRL(l.subtotal)}</span></div>`).join('') || '<p style="color:#999;font-size:13px">Carrinho vazio.</p>';
+      <div class="summary-mini-item"><span>${l.qty}x ${l.product.name}${l.color ? ` (${l.color})` : ''}</span><span>${formatBRL(l.subtotal)}</span></div>`).join('') || '<p style="color:#999;font-size:13px">Carrinho vazio.</p>';
     document.getElementById('coSubtotal').textContent = formatBRL(Cart.subtotal());
     if (couponResult){
       document.getElementById('coCouponRow').style.display = 'flex';
@@ -246,7 +246,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: Cart.lines().map(l => ({ id: l.id, qty: l.qty })),
+          items: Cart.lines().map(l => ({ id: l.id, qty: l.qty, color: l.color || null })),
           cep: cepInput.value,
           shippingCode: selectedShippingCode,
           shippingLabel: selectedShipping ? selectedShipping.label : null,
@@ -273,7 +273,7 @@
         btn.textContent = originalLabel;
         return;
       }
-      const linesSnapshot = Cart.lines().map(l => ({ id: l.id, name: l.product.name, cat: l.product.cat, qty: l.qty, price: l.subtotal }));
+      const linesSnapshot = Cart.lines().map(l => ({ id: l.id, name: l.product.name, cat: l.product.cat, qty: l.qty, price: l.subtotal, color: l.color || null }));
       localStorage.setItem('cb3d_last_order', JSON.stringify({
         id: data.orderCode,
         total: data.total,

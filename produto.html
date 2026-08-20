@@ -30,6 +30,14 @@
   .pd-specs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; margin-bottom: 24px; }
   .pd-spec { display: flex; justify-content: space-between; font-size: 13px; padding: 10px 0; border-bottom: 1px dashed #eee; }
   .pd-spec b { color: var(--gray-500); font-weight: 600; }
+  .pd-color-block { margin-bottom: 22px; }
+  .pd-color-label { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+  .pd-color-label span { font-weight: 400; color: var(--gray-500); }
+  .pd-color-swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+  .pd-color-swatch { width: 34px; height: 34px; border-radius: 50%; border: 2px solid transparent; padding: 2px; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); transition: transform .15s, border-color .15s; }
+  .pd-color-swatch span { display: block; width: 100%; height: 100%; border-radius: 50%; }
+  .pd-color-swatch:hover { transform: scale(1.08); }
+  .pd-color-swatch.active { border-color: var(--gold); }
   .pd-buybox { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
   .pd-actions { display: flex; gap: 12px; }
   .pd-actions .btn { flex: 1; padding: 16px; }
@@ -75,6 +83,11 @@
       <div class="pd-price-block" id="pdPriceBlock"></div>
       <div class="pd-installment" id="pdInstallment"></div>
       <p class="pd-short" id="pdShort"></p>
+
+      <div class="pd-color-block" id="pdColorBlock" style="display:none">
+        <div class="pd-color-label">Cor: <span id="pdColorSelectedName"></span></div>
+        <div class="pd-color-swatches" id="pdColorSwatches"></div>
+      </div>
 
       <div class="pd-specs" id="pdSpecs"></div>
 
@@ -166,11 +179,34 @@
   document.getElementById('pdShort').textContent = p.short;
   document.getElementById('pdFullDesc').textContent = p.desc;
 
+  const dimensoes = (p.length_cm || p.width_cm || p.height_cm)
+    ? `${p.length_cm ?? '?'} × ${p.width_cm ?? '?'} × ${p.height_cm ?? '?'} cm (C × L × A)`
+    : null;
   const specs = [
-    ['Material', p.material], ['Cor', p.cor], ['SKU', p.sku],
-  ];
+    ['Material', p.material], ['Dimensões', dimensoes], ['SKU', p.sku],
+  ].filter(([,v]) => v);
   document.getElementById('pdSpecs').innerHTML = specs.map(([k,v])=>`<div class="pd-spec"><b>${k}</b><span>${v}</span></div>`).join('');
   document.getElementById('pdStock').innerHTML = p.stock > 0 ? `${ICO.check} ${p.stock} unidades em estoque` : 'Sob encomenda';
+
+  // ---------- Seletor de cor ----------
+  // Só aparece quando o produto tem cores cadastradas no admin (p.colors).
+  // A cor escolhida acompanha o item pro carrinho e o pedido, pra loja saber
+  // qual variante produzir/enviar (ver Cart.add em assets/js/main.js).
+  let selectedColor = (p.colors && p.colors.length) ? p.colors[0].name : null;
+  if (p.colors && p.colors.length) {
+    document.getElementById('pdColorBlock').style.display = '';
+    function renderColorSwatches(){
+      document.getElementById('pdColorSelectedName').textContent = selectedColor || '';
+      document.getElementById('pdColorSwatches').innerHTML = p.colors.map(cl => `
+        <button type="button" class="pd-color-swatch ${cl.name===selectedColor?'active':''}" title="${cl.name}" data-color="${cl.name.replace(/"/g,'&quot;')}">
+          <span style="background:${cl.hex}"></span>
+        </button>`).join('');
+      document.getElementById('pdColorSwatches').querySelectorAll('.pd-color-swatch').forEach(btn => {
+        btn.addEventListener('click', () => { selectedColor = btn.dataset.color; renderColorSwatches(); });
+      });
+    }
+    renderColorSwatches();
+  }
 
   function renderFavBtn(){
     const active = Favorites.has(p.id);
@@ -185,8 +221,8 @@
     inp.value = Math.max(1, (parseInt(inp.value)||1) + delta);
     renderCouponDiscount();
   };
-  window.addCurrentToCart = function(){ addToCartWithFeedback(p.id, parseInt(document.getElementById('qtyInput').value)||1, true); };
-  window.buyNow = function(){ addToCartWithFeedback(p.id, parseInt(document.getElementById('qtyInput').value)||1, false); location.href='checkout.html'; };
+  window.addCurrentToCart = function(){ addToCartWithFeedback(p.id, parseInt(document.getElementById('qtyInput').value)||1, true, selectedColor); };
+  window.buyNow = function(){ addToCartWithFeedback(p.id, parseInt(document.getElementById('qtyInput').value)||1, false, selectedColor); location.href='checkout.html'; };
 
   // ---------- Cupom de desconto (validado no servidor) ----------
   // O código fica salvo no mesmo localStorage usado pelo carrinho e pelo

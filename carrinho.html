@@ -75,13 +75,13 @@
               <div class="icon-wrap">${iconFor(l.product.cat)}</div>
               <div>
                 <div class="cl-name">${l.product.name}</div>
-                <div class="cl-cat">${(CATEGORIES.find(c=>c.slug===l.product.cat)||{}).name}</div>
-                <a class="cl-remove" onclick="Cart.remove('${l.id}'); render();">Remover</a>
+                <div class="cl-cat">${(CATEGORIES.find(c=>c.slug===l.product.cat)||{}).name}${l.color ? ` · Cor: ${l.color}` : ''}</div>
+                <a class="cl-remove" onclick="Cart.remove('${l.id}', '${escJs(l.color)}'); render();">Remover</a>
               </div>
               <div class="qty-box">
-                <button onclick="Cart.setQty('${l.id}', ${l.qty-1}); render();">−</button>
+                <button onclick="Cart.setQty('${l.id}', ${l.qty-1}, '${escJs(l.color)}'); render();">−</button>
                 <span>${l.qty}</span>
-                <button onclick="Cart.setQty('${l.id}', ${l.qty+1}); render();">+</button>
+                <button onclick="Cart.setQty('${l.id}', ${l.qty+1}, '${escJs(l.color)}'); render();">+</button>
               </div>
               <div class="cl-price">${formatBRL(l.subtotal)}</div>
               <div></div>

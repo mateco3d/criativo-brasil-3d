@@ -98,8 +98,19 @@ async function updateOrderStatus(id, status, trackingCode){
   try {
     const body = { id, status };
     if (trackingCode) body.trackingCode = trackingCode;
-    await fetch('/api/orders', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  } catch (e) { /* falha silenciosa — o painel tenta de novo na próxima ação */ }
+    const res = await fetch('/api/orders', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    return await res.json().catch(()=>({}));
+  } catch (e) { return {}; /* falha silenciosa — o painel tenta de novo na próxima ação */ }
+}
+// Reenvia manualmente o e-mail de rastreio de um pedido (botão "Reenviar
+// e-mail" no painel) — usado quando o envio automático falhou, ou quando
+// o admin corrigiu o e-mail do cliente depois de já ter marcado como
+// enviado. Retorna { ok, trackingEmail: { status, error? } }.
+async function resendTrackingEmail(id){
+  try {
+    const res = await fetch('/api/orders', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, resendTrackingEmail: true }) });
+    return await res.json().catch(()=>({}));
+  } catch (e) { return {}; }
 }
 async function markOrdersSeen(){
   try {

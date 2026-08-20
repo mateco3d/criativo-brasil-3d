@@ -22,6 +22,34 @@
   const STATUS = ['Aguardando Pagamento','Processando','Enviado','Entregue','Cancelado'];
   const stPill = { 'Aguardando Pagamento':'pill-gray','Processando':'pill-gold','Enviado':'pill-blue','Entregue':'pill-green','Cancelado':'pill-red' };
 
+  // -------------------------------------------------------------------
+  // Status do e-mail de rastreio (enviado ao CLIENTE quando o pedido é
+  // marcado como "Enviado" com um código) — mostra se realmente foi
+  // entregue ao Gmail da loja ou se falhou, em vez de assumir que deu
+  // certo silenciosamente (ver api/orders.js → tentarEnviarRastreio).
+  function emailStatusInfo(o){
+    if (!o.tracking_code) return null; // nada foi enviado ainda, nem faz sentido mostrar
+    // Cores em hex puro (não var()) porque o modal usa ${color}14/${color}44
+    // para gerar um fundo/borda translúcidos (#RRGGBBAA) — não dá pra
+    // concatenar um sufixo de alfa depois de uma chamada var(...).
+    switch (o.tracking_email_status) {
+      case 'sent':
+        return { color: '#1e8e3e', text: `E-mail de rastreio enviado ao cliente${o.tracking_email_sent_at ? ' em ' + fmtDateHora(o.tracking_email_sent_at) : ''}.` };
+      case 'failed':
+        return { color: '#c0392b', text: `Falha ao enviar o e-mail de rastreio${o.tracking_email_sent_at ? ' (tentativa em ' + fmtDateHora(o.tracking_email_sent_at) + ')' : ''}: ${o.tracking_email_error || 'motivo desconhecido'}.` };
+      case 'no_email':
+        return { color: '#888888', text: 'Este pedido não tem e-mail do cliente salvo — não foi possível notificar.' };
+      default:
+        return { color: '#888888', text: 'Ainda não houve tentativa de envio do e-mail de rastreio.' };
+    }
+  }
+  function fmtDateHora(iso){
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' às '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+
   // Pedidos reais, vindos do banco de dados (Postgres/Neon) via /api/orders.
   // Cada pedido feito pelo checkout do site (qualquer cliente, qualquer
   // navegador/dispositivo) aparece aqui automaticamente.
@@ -65,9 +93,10 @@
           </select>
         </td>
         <td>
-          <div class="row-actions">
+          <div class="row-actions" style="align-items:center">
             <button title="Ver detalhes" onclick="verDetalhes('${o.id}')">${AICO.eye}</button>
             <button title="Dados para postagem" onclick="abrirPostagem('${o.id}')">${AICO.print}</button>
+            ${o.tracking_email_status === 'failed' ? `<span title="Falha ao enviar e-mail de rastreio — veja em Detalhes" style="font-size:11px;font-weight:700;color:var(--red,#c0392b);background:#fdeaea;border-radius:6px;padding:3px 7px">✉ falhou</span>` : ''}
           </div>
         </td>
       </tr>`;
@@ -76,9 +105,48 @@
   function verDetalhes(id){
     const o = allOrders.find(x=>x.id===id);
     if (!o) return;
-    const itens = (o.itemsDetail||[]).map(it => `${it.qty}x ${it.name}`).join('\n') || '—';
-    const rastreio = o.tracking_code ? `\nCódigo de rastreio: ${o.tracking_code}` : '';
-    alert(`Pedido ${o.id}\nCliente: ${o.cliente||'—'} (${o.email||'—'})\nTelefone: ${o.telefone||'—'}\nStatus: ${o.status}\nTotal: ${formatBRL(o.total)}${rastreio}\n\nItens:\n${itens}`);
+    const itensHtml = (o.itemsDetail||[]).map(it => `<li>${it.qty}x ${it.name}</li>`).join('') || '<li>—</li>';
+    const emailInfo = emailStatusInfo(o);
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:14px;max-width:460px;width:100%;padding:26px;max-height:85vh;overflow:auto">
+        <h3 style="margin:0 0 4px">Pedido ${o.id}</h3>
+        <p style="font-size:13px;color:var(--gray-500);margin:0 0 16px">${o.cliente||'—'} (${o.email||'sem e-mail salvo'})${o.telefone ? ' — ' + o.telefone : ''}</p>
+        <p style="font-size:13px;margin:0 0 4px"><strong>Status:</strong> ${o.status}</p>
+        <p style="font-size:13px;margin:0 0 4px"><strong>Total:</strong> ${formatBRL(o.total)}</p>
+        ${o.tracking_code ? `<p style="font-size:13px;margin:0 0 4px"><strong>Código de rastreio:</strong> ${o.tracking_code}</p>` : ''}
+        <p style="font-size:13px;margin:12px 0 6px"><strong>Itens:</strong></p>
+        <ul style="font-size:13px;margin:0 0 16px;padding-left:18px">${itensHtml}</ul>
+        ${emailInfo ? `
+          <div style="border-radius:10px;padding:12px 14px;background:${emailInfo.color}14;border:1px solid ${emailInfo.color}44;margin-bottom:16px">
+            <p style="font-size:12.5px;margin:0;color:${emailInfo.color}">${emailInfo.text}</p>
+            ${o.tracking_code ? `<button class="btn btn-ghost" style="margin-top:10px;padding:7px 12px;font-size:12px" id="reenviarEmailBtn">Reenviar e-mail de rastreio</button>` : ''}
+          </div>` : ''}
+        <button class="btn btn-ghost" style="width:100%" id="fecharDetalhesBtn">Fechar</button>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e)=>{ if (e.target === modal) modal.remove(); });
+    modal.querySelector('#fecharDetalhesBtn').addEventListener('click', ()=> modal.remove());
+    const reenviarBtn = modal.querySelector('#reenviarEmailBtn');
+    if (reenviarBtn) {
+      reenviarBtn.addEventListener('click', async ()=>{
+        reenviarBtn.disabled = true; reenviarBtn.textContent = 'Enviando...';
+        const result = await resendTrackingEmail(id);
+        const te = result && result.trackingEmail;
+        if (te) {
+          o.tracking_email_status = te.status === 'sent' ? 'sent' : (te.status === 'no_email' ? 'no_email' : (te.status === 'failed' ? 'failed' : o.tracking_email_status));
+          o.tracking_email_error = te.error || null;
+          o.tracking_email_sent_at = new Date().toISOString();
+        }
+        modal.remove();
+        render();
+        if (te && te.status === 'sent') showToast('E-mail enviado!', 'O cliente foi notificado com o código de rastreio.');
+        else if (te && te.status === 'no_email') showToast('Sem e-mail salvo', 'Este pedido não tem e-mail do cliente.');
+        else showToast('Falha ao enviar', (te && te.error) || 'Não foi possível enviar o e-mail. Tente novamente.');
+      });
+    }
   }
 
   // -------------------------------------------------------------------
@@ -204,9 +272,19 @@
       const code = modal.querySelector('#rastreioInput').value.trim();
       modal.remove();
       if (!code) return;
-      await updateOrderStatus(id, 'Enviado', code);
+      const result = await updateOrderStatus(id, 'Enviado', code);
       o.tracking_code = code;
-      showToast(o.email ? 'Cliente notificado!' : 'Código salvo', o.email ? 'E-mail com o código de rastreio foi enviado.' : 'Este pedido não tem e-mail salvo para notificar.');
+      const te = result && result.trackingEmail;
+      if (te) {
+        o.tracking_email_status = te.status;
+        o.tracking_email_error = te.error || null;
+        o.tracking_email_sent_at = new Date().toISOString();
+      }
+      render();
+      if (te && te.status === 'sent') showToast('Cliente notificado!', 'E-mail com o código de rastreio foi enviado.');
+      else if (te && te.status === 'no_email') showToast('Código salvo', 'Este pedido não tem e-mail salvo para notificar.');
+      else if (te && te.status === 'failed') showToast('Código salvo, mas o e-mail falhou', 'Veja em "Ver detalhes" para reenviar.');
+      else showToast('Código salvo', '');
     });
   }
   window.abrirRastreio = abrirRastreio;

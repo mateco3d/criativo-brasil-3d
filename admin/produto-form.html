@@ -60,8 +60,25 @@
           <h3>Especificações</h3>
           <div class="form-row cols-3">
             <div class="form-group"><label>Material</label><input type="text" id="f_material" value="${e.material||''}"></div>
-            <div class="form-group"><label>Cor</label><input type="text" id="f_cor" value="${e.cor||''}"></div>
           </div>
+          <label style="display:block;margin:14px 0 6px">Dimensões da embalagem (cm)</label>
+          <p style="font-size:12.5px;color:var(--gray-500);margin:-2px 0 10px">Aparece como especificação na página do produto ("Tamanho"). Deixe em branco se não souber ainda.</p>
+          <div class="form-row cols-3">
+            <div class="form-group"><label>Comprimento</label><input type="number" step="0.1" min="0" id="f_length" value="${e.length_cm ?? ''}" placeholder="cm"></div>
+            <div class="form-group"><label>Largura</label><input type="number" step="0.1" min="0" id="f_width" value="${e.width_cm ?? ''}" placeholder="cm"></div>
+            <div class="form-group"><label>Altura</label><input type="number" step="0.1" min="0" id="f_height" value="${e.height_cm ?? ''}" placeholder="cm"></div>
+          </div>
+        </div>
+
+        <div class="admin-panel kv-form">
+          <h3>Cores disponíveis</h3>
+          <p style="font-size:12.5px;color:var(--gray-500);margin:-4px 0 12px">Cadastre as opções de cor que o cliente vai poder escolher na página do produto. Se não cadastrar nenhuma, o produto não mostra seletor de cor (fica só com a foto padrão).</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <input type="text" id="f_colorName" placeholder="Nome da cor (ex: Vermelho)" style="flex:1">
+            <input type="color" id="f_colorHex" value="#c0392b" style="width:48px;height:40px;padding:2px;border-radius:8px;border:1.5px solid #e2e2e2;cursor:pointer">
+            <button type="button" class="btn btn-black" id="f_colorAddBtn" style="white-space:nowrap">+ Adicionar</button>
+          </div>
+          <div id="f_colorList" style="display:flex;flex-wrap:wrap;gap:8px"></div>
         </div>
 
         <div class="admin-panel kv-form">
@@ -113,12 +130,46 @@
   document.getElementById('f_cat').addEventListener('change', () => renderSubcatOptions(false));
   renderSubcatOptions(true);
 
+  // ---------- Cores disponíveis (variantes que o cliente escolhe no produto) ----------
+  // Guardado como lista { name, hex } no próprio produto. Mantido em memória
+  // aqui (array `colors`) e só vira parte do produto salvo no submit do
+  // formulário — igual ao padrão já usado para tags.
+  let colors = (e.colors || []).map(cl => ({ name: cl.name, hex: cl.hex }));
+  function renderColorList(){
+    const el = document.getElementById('f_colorList');
+    if (!colors.length) { el.innerHTML = '<p style="font-size:12.5px;color:#999;margin:0">Nenhuma cor cadastrada ainda — o produto vai aparecer sem seletor de cor.</p>'; return; }
+    el.innerHTML = colors.map((cl,i) => `
+      <span style="display:inline-flex;align-items:center;gap:7px;background:var(--gray-100);border-radius:20px;padding:5px 8px 5px 6px;font-size:13px">
+        <span style="width:18px;height:18px;border-radius:50%;background:${cl.hex};border:1px solid rgba(0,0,0,.15);display:inline-block;flex-shrink:0"></span>
+        ${cl.name}
+        <button type="button" onclick="window.__removeColor(${i})" style="border:none;background:none;cursor:pointer;color:var(--red);font-size:16px;line-height:1;padding:0 2px" aria-label="Remover cor">×</button>
+      </span>`).join('');
+  }
+  window.__removeColor = function(i){ colors.splice(i,1); renderColorList(); };
+  document.getElementById('f_colorAddBtn').addEventListener('click', () => {
+    const nameInp = document.getElementById('f_colorName');
+    const hexInp = document.getElementById('f_colorHex');
+    const name = nameInp.value.trim();
+    if (!name) { nameInp.focus(); return; }
+    colors.push({ name, hex: hexInp.value });
+    nameInp.value = '';
+    nameInp.focus();
+    renderColorList();
+  });
+  document.getElementById('f_colorName').addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') { ev.preventDefault(); document.getElementById('f_colorAddBtn').click(); }
+  });
+  renderColorList();
+
   document.getElementById('prodForm').addEventListener('submit', function(ev){
     ev.preventDefault();
     const tags = [];
     if (document.getElementById('tag_novo').checked) tags.push('novo');
     if (document.getElementById('tag_promocao').checked) tags.push('promocao');
     if (document.getElementById('tag_maisvendido').checked) tags.push('mais-vendido');
+    const length_cm = parseFloat(document.getElementById('f_length').value);
+    const width_cm = parseFloat(document.getElementById('f_width').value);
+    const height_cm = parseFloat(document.getElementById('f_height').value);
     const product = {
       id: e.id, slug: document.getElementById('f_slug').value, name: document.getElementById('f_name').value,
       cat: document.getElementById('f_cat').value, subcat: document.getElementById('f_subcat').value || null,
@@ -128,7 +179,10 @@
       promo: parseFloat(document.getElementById('f_promo').value)||null,
       stock: parseInt(document.getElementById('f_stock').value)||0,
       material: document.getElementById('f_material').value,
-      cor: document.getElementById('f_cor').value, tags,
+      length_cm: isNaN(length_cm) ? null : length_cm,
+      width_cm: isNaN(width_cm) ? null : width_cm,
+      height_cm: isNaN(height_cm) ? null : height_cm,
+      colors, tags,
       rating: e.rating || 5, reviews: e.reviews || 0,
     };
     AdminStore.upsertProduct(product);

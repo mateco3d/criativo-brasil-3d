@@ -105,7 +105,7 @@
   function verDetalhes(id){
     const o = allOrders.find(x=>x.id===id);
     if (!o) return;
-    const itensHtml = (o.itemsDetail||[]).map(it => `<li>${it.qty}x ${it.name}</li>`).join('') || '<li>—</li>';
+    const itensHtml = (o.itemsDetail||[]).map(it => `<li>${it.qty}x ${it.name}${it.color ? ` — Cor: ${it.color}` : ''}</li>`).join('') || '<li>—</li>';
     const emailInfo = emailStatusInfo(o);
 
     const modal = document.createElement('div');

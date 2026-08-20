@@ -43,23 +43,28 @@ const ICO = {
 };
 
 /* ---------------- Carrinho (localStorage) ---------------- */
+// Itens do carrinho são identificados por produto + cor escolhida (quando o
+// produto tem opções de cor cadastradas no admin — ver admin/produto-form.html
+// e produto.html). Duas cores do mesmo produto viram linhas separadas no
+// carrinho; `color` fica `null` para produtos sem seleção de cor.
+function escJs(str){ return String(str==null?'':str).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 const Cart = {
   key: 'cb3d_cart',
   get(){ try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e){ return []; } },
   save(items){ localStorage.setItem(this.key, JSON.stringify(items)); document.dispatchEvent(new CustomEvent('cart:update')); },
-  add(productId, qty=1){
+  add(productId, qty=1, color=null){
     const items = this.get();
-    const found = items.find(i => i.id === productId);
-    if (found) found.qty += qty; else items.push({ id: productId, qty });
+    const found = items.find(i => i.id === productId && (i.color||null) === (color||null));
+    if (found) found.qty += qty; else items.push({ id: productId, qty, color: color||null });
     this.save(items);
   },
-  setQty(productId, qty){
+  setQty(productId, qty, color=null){
     let items = this.get();
-    if (qty <= 0) items = items.filter(i => i.id !== productId);
-    else { const f = items.find(i=>i.id===productId); if (f) f.qty = qty; }
+    if (qty <= 0) items = items.filter(i => !(i.id === productId && (i.color||null) === (color||null)));
+    else { const f = items.find(i=>i.id===productId && (i.color||null) === (color||null)); if (f) f.qty = qty; }
     this.save(items);
   },
-  remove(productId){ this.save(this.get().filter(i => i.id !== productId)); },
+  remove(productId, color=null){ this.save(this.get().filter(i => !(i.id === productId && (i.color||null) === (color||null)))); },
   clear(){ this.save([]); },
   count(){ return this.get().reduce((a,i)=>a+i.qty,0); },
   lines(){
@@ -293,15 +298,15 @@ function renderMinicart(){
       <div class="minicart-item">
         <div class="icon-wrap" style="display:flex;align-items:center;justify-content:center;color:#121212">${iconFor(l.product.cat)}</div>
         <div class="mi-info">
-          <div class="mi-name">${l.product.name}</div>
+          <div class="mi-name">${l.product.name}${l.color ? ` <span style="color:#999;font-weight:400">— ${l.color}</span>` : ''}</div>
           <div style="font-size:12px;color:#999">${formatBRL(l.unit)}</div>
           <div class="mi-qty">
             <div class="qty-box">
-              <button onclick="Cart.setQty('${l.id}', ${l.qty-1}); renderMinicart();">−</button>
+              <button onclick="Cart.setQty('${l.id}', ${l.qty-1}, '${escJs(l.color)}'); renderMinicart();">−</button>
               <span>${l.qty}</span>
-              <button onclick="Cart.setQty('${l.id}', ${l.qty+1}); renderMinicart();">+</button>
+              <button onclick="Cart.setQty('${l.id}', ${l.qty+1}, '${escJs(l.color)}'); renderMinicart();">+</button>
             </div>
-            <button class="btn-icon" style="width:30px;height:30px" onclick="Cart.remove('${l.id}'); renderMinicart();">${ICO.trash}</button>
+            <button class="btn-icon" style="width:30px;height:30px" onclick="Cart.remove('${l.id}', '${escJs(l.color)}'); renderMinicart();">${ICO.trash}</button>
           </div>
         </div>
       </div>`).join('');
@@ -334,9 +339,13 @@ function showToast(title, msg){
   window.__toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
 }
 
-function addToCartWithFeedback(productId, qty=1, openCart=false){
-  Cart.add(productId, qty);
+function addToCartWithFeedback(productId, qty=1, openCart=false, color=null){
   const p = getProduct(productId);
+  // Se o produto tem cores cadastradas e a chamada não veio de um seletor de
+  // cor (ex.: botão "Comprar" direto no card da listagem), usa a primeira
+  // cor cadastrada como padrão em vez de deixar a linha do carrinho sem cor.
+  const finalColor = color || (p && p.colors && p.colors[0] && p.colors[0].name) || null;
+  Cart.add(productId, qty, finalColor);
   showToast('Adicionado ao carrinho', p ? p.name : 'Produto adicionado');
   if (openCart && window.openMinicart) window.openMinicart();
 }

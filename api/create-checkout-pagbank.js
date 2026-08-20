@@ -80,7 +80,8 @@ module.exports = async function handler(req, res) {
       res.status(400).json({ error: `Produto inválido: ${raw && raw.id}` });
       return;
     }
-    lines.push({ product, qty, unit: unitPrice(product) });
+    const color = raw && raw.color ? String(raw.color).slice(0, 80) : null;
+    lines.push({ product, qty, unit: unitPrice(product), color });
   }
   const subtotal = round2(lines.reduce((sum, l) => sum + l.unit * l.qty, 0));
 
@@ -134,7 +135,7 @@ module.exports = async function handler(req, res) {
     const lineTotal = round2(l.unit * l.qty - (discountPerLine[idx] || 0));
     return {
       reference_id: l.product.id,
-      name: l.product.name,
+      name: l.color ? `${l.product.name} — ${l.color}` : l.product.name,
       quantity: l.qty,
       unit_amount: toCents(lineTotal / l.qty),
     };
@@ -217,8 +218,8 @@ module.exports = async function handler(req, res) {
         const l = lines[i];
         const lineTotal = round2(l.unit * l.qty - (discountPerLine[i] || 0));
         await sql`
-          INSERT INTO order_items (order_id, product_id, name, cat, qty, price)
-          VALUES (${orderCode}, ${l.product.id}, ${l.product.name}, ${l.product.cat || null}, ${l.qty}, ${lineTotal})
+          INSERT INTO order_items (order_id, product_id, name, cat, qty, price, color)
+          VALUES (${orderCode}, ${l.product.id}, ${l.product.name}, ${l.product.cat || null}, ${l.qty}, ${lineTotal}, ${l.color || null})
         `;
       }
       if (couponApplied) {

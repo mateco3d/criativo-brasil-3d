@@ -73,7 +73,7 @@ module.exports = async function handler(req, res) {
     let itemsByOrder = {};
     if (ids.length) {
       const { rows: items } = await sql`
-        SELECT order_id, product_id, name, cat, qty, price
+        SELECT order_id, product_id, name, cat, qty, price, color
         FROM order_items
         WHERE order_id = ANY(${ids})
       `;

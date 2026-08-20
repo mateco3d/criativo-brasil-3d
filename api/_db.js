@@ -86,6 +86,11 @@ async function ensureSchema() {
       price NUMERIC(10,2) NOT NULL DEFAULT 0
     )
   `;
+  // Cor escolhida pelo cliente (quando o produto tem cores cadastradas —
+  // ver admin/produto-form.html e o seletor de cor em produto.html). Coluna
+  // adicionada depois da tabela já existir em produção, por isso via ALTER
+  // TABLE (o CREATE TABLE acima só roda na primeira vez).
+  await sql`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS color TEXT`;
   await sql`
     CREATE TABLE IF NOT EXISTS coupons (
       code TEXT PRIMARY KEY,

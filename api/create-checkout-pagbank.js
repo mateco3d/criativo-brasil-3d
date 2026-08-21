@@ -165,8 +165,13 @@ module.exports = async function handler(req, res) {
     customer_modifiable: false,
     items: pbItems,
     redirect_url: `${origin}/pedido-confirmado.html?order=${orderCode}`,
-    notification_urls: [`${origin}/api/pagbank-webhook`],
-    payment_notification_urls: [`${origin}/api/pagbank-webhook`],
+    // Em modo sandbox, a URL de notificação também carrega ?sandbox=1, para
+    // que api/pagbank-webhook.js saiba (por pedido, não por variável de
+    // ambiente global) que deve reconsultar o pedido na API de Sandbox da
+    // PagBank em vez da API de produção. Isso evita qualquer risco de um
+    // interruptor global afetar por engano o checkout real da loja.
+    notification_urls: [`${origin}/api/pagbank-webhook${isSandbox ? '?sandbox=1' : ''}`],
+    payment_notification_urls: [`${origin}/api/pagbank-webhook${isSandbox ? '?sandbox=1' : ''}`],
   };
 
   try {

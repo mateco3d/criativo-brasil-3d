@@ -18,16 +18,20 @@
    evitar que a PagBank fique reenviando a notificação indefinidamente
    — erros são só logados.
 
-   ATENÇÃO — formato do payload ainda não validado com notificação
-   real: a documentação da PagBank não deixa 100% claro o formato
-   exato do corpo enviado a payment_notification_urls/notification_urls
-   (varia entre "id do checkout", "id do pedido" e "id da cobrança"
-   dependendo do evento). Por isso este handler tenta várias chaves
-   comuns e sempre reconsulta a PagBank pelo id encontrado antes de
-   confiar em qualquer status. Assim que o usuário tiver credenciais
-   de sandbox, o ideal é disparar uma notificação de teste e conferir
-   no log do Vercel se os campos batem — ver tarefa pendente em
-   claude/site-progresso.md.
+   ATENÇÃO — formato do payload: a documentação da PagBank não deixa
+   100% claro o formato exato do corpo enviado a
+   payment_notification_urls/notification_urls (varia entre "id do
+   checkout", "id do pedido" e "id da cobrança" dependendo do evento).
+   Por isso este handler tenta várias chaves comuns e sempre reconsulta
+   a PagBank pelo id encontrado antes de confiar em qualquer status.
+
+   Sandbox vs. produção: a URL de notificação enviada pra PagBank em
+   api/create-checkout-pagbank.js já vem com ?sandbox=1 quando o
+   checkout foi criado em modo sandbox — então decidimos aqui, por
+   pedido (via query string), qual API reconsultar. Isso é proposital:
+   nunca usamos uma variável de ambiente global pra isso, pra não haver
+   nenhum risco de um interruptor esquecido ligado afetar o checkout
+   real da loja.
 =================================================================== */
 
 const { sql, ensureSchema } = require('./_db');
@@ -78,15 +82,15 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    const token = process.env.PAGBANK_TOKEN;
+    const isSandbox = query.sandbox === '1';
+    const token = isSandbox ? process.env.PAGBANK_SANDBOX_TOKEN : process.env.PAGBANK_TOKEN;
     if (!token) {
-      console.log('Webhook recebido, mas PAGBANK_TOKEN não está configurado.');
+      const varName = isSandbox ? 'PAGBANK_SANDBOX_TOKEN' : 'PAGBANK_TOKEN';
+      console.log(`Webhook recebido, mas ${varName} não está configurado.`);
       res.status(200).json({ received: true });
       return;
     }
-    const apiBase = process.env.PAGBANK_SANDBOX === 'true'
-      ? 'https://sandbox.api.pagseguro.com'
-      : 'https://api.pagseguro.com';
+    const apiBase = isSandbox ? 'https://sandbox.api.pagseguro.com' : 'https://api.pagseguro.com';
 
     // Reconsulta o pedido oficial na PagBank (nunca confia só no webhook).
     // Se o id recebido for de um pedido (ORDE_...), consulta direto; se for

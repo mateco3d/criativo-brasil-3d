@@ -427,10 +427,13 @@ function tagBadge(tag){
 }
 function productCardHTML(p){
   const isFav = typeof Favorites !== 'undefined' && Favorites.has(p.id);
+  const cover = (p.images && p.images[0])
+    ? `<img src="${p.images[0]}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;display:block">`
+    : iconFor(p.cat);
   return `
   <div class="prod-card">
     <div class="prod-media">
-      <a href="produto.html?slug=${p.slug}" class="icon-wrap" style="color:#121212">${iconFor(p.cat)}</a>
+      <a href="produto.html?slug=${p.slug}" class="icon-wrap" style="color:#121212">${cover}</a>
       <div class="prod-tags">${(p.tags||[]).map(tagBadge).join('')}</div>
       <button class="prod-fav ${isFav?'active':''}" onclick="toggleFav(this,'${p.id}')" aria-label="Favoritar">${ICO.heart}</button>
       <div class="prod-quick">

@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css">
 <link rel="stylesheet" href="../assets/css/admin.css">
+<style>
+.prod-img-drop{border-radius:10px;border:1.5px dashed #ddd;padding:26px 10px;text-align:center;color:#999;font-size:12.5px;cursor:pointer;transition:border-color .15s,background .15s}
+.prod-img-drop.dragover{border-color:var(--gold);background:#fffbea;color:var(--gray-700)}
+</style>
 </head>
 <body>
 <script src="../assets/js/data.js"></script>
@@ -30,8 +34,12 @@
           <h3>Informações Básicas</h3>
           <div class="form-row cols-2">
             <div class="form-group"><label>Nome do Produto</label><input type="text" id="f_name" value="${e.name||''}" required></div>
-            <div class="form-group"><label>Slug (URL)</label><input type="text" id="f_slug" value="${e.slug||''}" required></div>
+            <div class="form-group">
+              <label>Slug (URL) <span style="font-weight:400;color:var(--gray-500)">— opcional</span></label>
+              <input type="text" id="f_slug" value="${e.slug||''}" placeholder="gerado automaticamente pelo nome">
+            </div>
           </div>
+          <p style="font-size:12px;color:var(--gray-500);margin:-8px 0 14px">O slug é o trecho da URL que identifica o produto na loja (ex.: <code>produto.html?slug=chaveiro-personalizado</code>). Não precisa preencher — é gerado sozinho a partir do nome do produto, e você só mexe aqui se quiser um endereço específico.</p>
           <div class="form-row cols-2">
             <div class="form-group"><label>Categoria</label>
               <select id="f_cat">${CATEGORIES.map(cc=>`<option value="${cc.slug}" ${e.cat===cc.slug?'selected':''}>${cc.name}</option>`).join('')}</select>
@@ -83,7 +91,10 @@
 
         <div class="admin-panel kv-form">
           <h3>Imagens e Vídeos</h3>
-          <div class="upload-box">📷 Arraste imagens aqui ou clique para enviar (ilimitado) — integração Cloudinary</div>
+          <p style="font-size:12.5px;color:var(--gray-500);margin:-4px 0 12px">Arraste as fotos aqui ou clique para escolher do computador. A primeira foto vira a capa do produto (a que aparece no card da loja) — clique em "Tornar capa" em qualquer outra foto para trocar qual é a principal.</p>
+          <div id="f_imgDrop" class="prod-img-drop">📷 Arraste imagens aqui ou clique para escolher do computador</div>
+          <input type="file" id="f_imgFileInput" accept="image/*" multiple style="display:none">
+          <div id="f_imgThumbs" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px"></div>
           <div class="upload-box" style="margin-top:12px">🎬 Adicionar vídeo do produto (URL ou upload)</div>
         </div>
       </div>
@@ -130,6 +141,97 @@
   document.getElementById('f_cat').addEventListener('change', () => renderSubcatOptions(false));
   renderSubcatOptions(true);
 
+  // ---------- Slug automático ----------
+  // O slug é só o identificador na URL do produto (ex.: produto.html?slug=chaveiro-personalizado-com-logo).
+  // Antes era um campo obrigatório e travava o cadastro se ficasse em
+  // branco; agora é gerado sozinho a partir do nome (e só para de
+  // acompanhar o nome se o admin digitar algo manualmente no campo).
+  function slugify(str){
+    return String(str||'')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g,'-')
+      .replace(/^-+|-+$/g,'')
+      .slice(0,80);
+  }
+  function uniqueSlug(base, excludeId){
+    const all = AdminStore.get('products');
+    let slug = base || 'produto', n = 2;
+    while (all.some(pp => pp.slug === slug && pp.id !== excludeId)) { slug = `${base||'produto'}-${n++}`; }
+    return slug;
+  }
+  let slugTouched = !!(e.slug); // se o produto já existe com slug salvo, não sobrescreve sozinho
+  document.getElementById('f_slug').addEventListener('input', () => { slugTouched = true; });
+  document.getElementById('f_name').addEventListener('input', () => {
+    if (!slugTouched) document.getElementById('f_slug').value = slugify(document.getElementById('f_name').value);
+  });
+
+  // ---------- Imagens do produto (upload real: clique ou arrastar) ----------
+  // Antes essa caixa era só decorativa (não fazia nada). Agora funciona de
+  // verdade: clique abre o seletor de arquivos do computador, e também
+  // aceita arrastar e soltar imagens direto do computador. Cada imagem é
+  // redimensionada/comprimida no navegador (igual já era feito para banners
+  // em admin/banners.html) e fica salva junto com o produto — a primeira
+  // da lista é a "capa" mostrada no card da loja e na galeria do produto.
+  const MAX_IMG_WIDTH = 1000;
+  function resizeImageFile(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Não foi possível ler o arquivo.'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Arquivo não parece ser uma imagem válida.'));
+        img.onload = () => {
+          const scale = Math.min(1, MAX_IMG_WIDTH / img.width);
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  let images = (e.images || []).slice();
+  function renderThumbs(){
+    const el = document.getElementById('f_imgThumbs');
+    el.innerHTML = images.map((src,i) => `
+      <div style="position:relative;width:84px;height:84px;border-radius:10px;overflow:hidden;border:1.5px solid ${i===0?'var(--gold)':'#eee'}">
+        <img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block">
+        ${i===0
+          ? '<span style="position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.65);color:#fff;font-size:9px;padding:2px 5px;border-radius:5px">Capa</span>'
+          : `<button type="button" onclick="window.__makeCoverImg(${i})" title="Tornar capa" style="position:absolute;bottom:2px;left:2px;border:none;background:rgba(0,0,0,.65);color:#fff;font-size:9px;padding:2px 5px;border-radius:5px;cursor:pointer">Tornar capa</button>`}
+        <button type="button" onclick="window.__removeImg(${i})" title="Remover" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;font-size:13px;line-height:1">×</button>
+      </div>`).join('');
+  }
+  window.__removeImg = function(i){ images.splice(i,1); renderThumbs(); };
+  window.__makeCoverImg = function(i){ const [img] = images.splice(i,1); images.unshift(img); renderThumbs(); };
+
+  const imgDrop = document.getElementById('f_imgDrop');
+  const imgFileInput = document.getElementById('f_imgFileInput');
+  async function handleFiles(fileList){
+    const files = Array.from(fileList || []).filter(f => f.type && f.type.startsWith('image/'));
+    if (!files.length) return;
+    for (const file of files) {
+      try {
+        images.push(await resizeImageFile(file));
+        renderThumbs();
+      } catch (err) {
+        showToast('Não foi possível usar essa imagem', err.message || 'Tente outro arquivo.');
+      }
+    }
+    imgFileInput.value = '';
+  }
+  imgDrop.addEventListener('click', () => imgFileInput.click());
+  imgFileInput.addEventListener('change', () => handleFiles(imgFileInput.files));
+  ['dragenter','dragover'].forEach(evt => imgDrop.addEventListener(evt, (ev) => { ev.preventDefault(); ev.stopPropagation(); imgDrop.classList.add('dragover'); }));
+  ['dragleave','drop'].forEach(evt => imgDrop.addEventListener(evt, (ev) => { ev.preventDefault(); ev.stopPropagation(); imgDrop.classList.remove('dragover'); }));
+  imgDrop.addEventListener('drop', (ev) => { if (ev.dataTransfer && ev.dataTransfer.files) handleFiles(ev.dataTransfer.files); });
+  renderThumbs();
+
   // ---------- Cores disponíveis (variantes que o cliente escolhe no produto) ----------
   // Guardado como lista { name, hex } no próprio produto. Mantido em memória
   // aqui (array `colors`) e só vira parte do produto salvo no submit do
@@ -170,8 +272,13 @@
     const length_cm = parseFloat(document.getElementById('f_length').value);
     const width_cm = parseFloat(document.getElementById('f_width').value);
     const height_cm = parseFloat(document.getElementById('f_height').value);
+    // Slug: usa o que estiver no campo (se o admin editou manualmente) ou
+    // gera do nome; nunca fica em branco, e nunca colide com o slug de
+    // outro produto já cadastrado (ver uniqueSlug acima).
+    const rawSlug = document.getElementById('f_slug').value.trim();
+    const slug = uniqueSlug(slugify(rawSlug || document.getElementById('f_name').value), e.id);
     const product = {
-      id: e.id, slug: document.getElementById('f_slug').value, name: document.getElementById('f_name').value,
+      id: e.id, slug, name: document.getElementById('f_name').value,
       cat: document.getElementById('f_cat').value, subcat: document.getElementById('f_subcat').value || null,
       sku: document.getElementById('f_sku').value,
       short: document.getElementById('f_short').value, desc: document.getElementById('f_desc').value,
@@ -182,10 +289,15 @@
       length_cm: isNaN(length_cm) ? null : length_cm,
       width_cm: isNaN(width_cm) ? null : width_cm,
       height_cm: isNaN(height_cm) ? null : height_cm,
-      colors, tags,
+      colors, images, tags,
       rating: e.rating || 5, reviews: e.reviews || 0,
     };
-    AdminStore.upsertProduct(product);
+    try {
+      AdminStore.upsertProduct(product);
+    } catch (err) {
+      showToast('Não foi possível salvar', 'O navegador recusou salvar (provavelmente sem espaço local). Tente remover alguma imagem ou usar fotos menores.');
+      return;
+    }
     alert('Produto salvo com sucesso!');
     location.href = 'produtos.html';
   });

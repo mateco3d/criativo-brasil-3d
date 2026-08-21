@@ -229,16 +229,22 @@
   document.getElementById('processRow').innerHTML = steps.map(s => `
     <div class="process-item"><div class="process-num">${s.n}</div><h4>${s.t}</h4><p>${s.d}</p></div>`).join('');
 
-  // Avaliações
-  document.getElementById('reviewGrid').innerHTML = REVIEWS.slice(0,6).map(r => `
-    <div class="review-card">
-      <div class="review-stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
-      <p class="review-text">“${r.text}”</p>
-      <div class="review-user">
-        <div class="review-avatar">${r.name.split(' ').map(n=>n[0]).slice(0,2).join('')}</div>
-        <div><div class="review-name">${r.name}</div><div class="review-loc">${r.loc}</div></div>
-      </div>
-    </div>`).join('');
+  // Avaliações — a seção inteira some da home se não houver nenhuma
+  // avaliação cadastrada (ver assets/js/data.js), em vez de mostrar o
+  // título "O Que Nossos Clientes Dizem" com o quadro vazio embaixo.
+  if (REVIEWS.length) {
+    document.getElementById('reviewGrid').innerHTML = REVIEWS.slice(0,6).map(r => `
+      <div class="review-card">
+        <div class="review-stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+        <p class="review-text">“${r.text}”</p>
+        <div class="review-user">
+          <div class="review-avatar">${r.name.split(' ').map(n=>n[0]).slice(0,2).join('')}</div>
+          <div><div class="review-name">${r.name}</div><div class="review-loc">${r.loc}</div></div>
+        </div>
+      </div>`).join('');
+  } else {
+    document.getElementById('avaliacoes').style.display = 'none';
+  }
 
   // Instagram
   document.getElementById('instaGrid').innerHTML = Array.from({length:6}).map((_,i) => `

@@ -309,16 +309,20 @@
     });
   });
 
-  // Reviews
-  document.getElementById('pdReviewGrid').innerHTML = REVIEWS.slice(0,4).map(r => `
-    <div class="review-card">
-      <div class="review-stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
-      <p class="review-text">“${r.text}”</p>
-      <div class="review-user">
-        <div class="review-avatar">${r.name.split(' ').map(n=>n[0]).slice(0,2).join('')}</div>
-        <div><div class="review-name">${r.name}</div><div class="review-loc">${r.loc}</div></div>
-      </div>
-    </div>`).join('');
+  // Reviews — enquanto REVIEWS (assets/js/data.js) estiver vazio (avaliações
+  // fictícias removidas a pedido do usuário em 21/08), mostra uma mensagem
+  // simples no lugar do quadro de avaliações vazio.
+  document.getElementById('pdReviewGrid').innerHTML = REVIEWS.length
+    ? REVIEWS.slice(0,4).map(r => `
+      <div class="review-card">
+        <div class="review-stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+        <p class="review-text">“${r.text}”</p>
+        <div class="review-user">
+          <div class="review-avatar">${r.name.split(' ').map(n=>n[0]).slice(0,2).join('')}</div>
+          <div><div class="review-name">${r.name}</div><div class="review-loc">${r.loc}</div></div>
+        </div>
+      </div>`).join('')
+    : `<p style="grid-column:1/-1;color:var(--gray-500);padding:20px 0">Este produto ainda não tem avaliações.</p>`;
 
   // Q&A
   document.getElementById('qaList').innerHTML = QA_SAMPLE.map(qa => `

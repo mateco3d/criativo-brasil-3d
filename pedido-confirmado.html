@@ -36,10 +36,7 @@
 <script>
   mountLayout(null);
   const params = new URLSearchParams(location.search);
-  // O Mercado Pago acrescenta seus próprios parâmetros (status, collection_status,
-  // external_reference, payment_id) à URL de retorno que configuramos.
   const orderCode = params.get('order') || params.get('external_reference');
-  const mpStatus = params.get('collection_status') || params.get('status');
   let order = null;
   try { order = JSON.parse(localStorage.getItem('cb3d_last_order')); } catch(e){}
 
@@ -49,49 +46,65 @@
   const STATUS_MAP = {
     approved: { title: 'Pagamento Aprovado!', msg: 'Seu pedido foi confirmado e já entrou na fila de produção. Enviamos os detalhes para o seu e-mail.', badge: 'Pago', color: 'var(--green)' },
     pending: { title: 'Pagamento Pendente', msg: 'Recebemos seu pedido e estamos aguardando a confirmação do pagamento (comum em boleto e alguns métodos Pix).', badge: 'Pendente', color: 'var(--gold-dark)' },
-    in_process: { title: 'Pagamento em Análise', msg: 'Seu pagamento está sendo analisado pelo Mercado Pago. Você receberá a confirmação por e-mail em breve.', badge: 'Em Análise', color: 'var(--gold-dark)' },
-    rejected: { title: 'Pagamento Não Aprovado', msg: 'Seu pagamento não foi aprovado. Você pode tentar novamente com outro método na finalização da compra.', badge: 'Recusado', color: 'var(--red)' },
-    failure: { title: 'Pagamento Não Concluído', msg: 'Algo deu errado ao processar o pagamento. Você pode tentar novamente.', badge: 'Não Concluído', color: 'var(--red)' },
+    rejected: { title: 'Pagamento Não Aprovado', msg: 'Seu pagamento não foi aprovado ou foi cancelado. Você pode tentar novamente com outro método na finalização da compra.', badge: 'Recusado', color: 'var(--red)' },
   };
-  const s = STATUS_MAP[mpStatus] || (mpStatus ? STATUS_MAP.pending : null);
-  if (s){
+
+  function applyStatus(key){
+    const s = STATUS_MAP[key];
+    if (!s) return;
     document.getElementById('statusTitle').textContent = s.title;
     document.getElementById('statusMsg').textContent = s.msg;
     document.getElementById('statusBadge').textContent = s.badge;
     document.getElementById('statusBadge').style.background = s.color;
     document.getElementById('statusBadge').style.color = '#fff';
-    if (mpStatus === 'rejected' || mpStatus === 'failure'){
+    if (key === 'rejected'){
       document.getElementById('statusIcon').style.background = '#fdeaea';
       document.getElementById('statusIcon').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" style="width:44px;height:44px"><path d="M6 6l12 12M18 6L6 18"/></svg>';
     }
+    if (key === 'approved') {
+      localStorage.removeItem('cb3d_coupon');
+      Cart.clear();
+    } else {
+      // Pendente ou recusado: mantém o carrinho intacto e troca o botão
+      // secundário para levar direto de volta ao checkout, já que os
+      // itens continuam lá.
+      const cta = document.getElementById('ctaSecundario');
+      if (cta) { cta.textContent = 'Concluir Pagamento'; cta.href = 'checkout.html'; }
+      const msg = document.getElementById('carrinhoMantidoMsg');
+      if (msg) msg.style.display = 'block';
+    }
   }
 
-  // O pedido já é salvo no banco de dados real pelo servidor (veja
-  // api/create-preference.js e api/mp-webhook.js) assim que a preferência de
-  // pagamento é criada e quando o Mercado Pago confirma o status — por isso
-  // não é mais necessário replicar nada aqui no navegador para o pedido
-  // aparecer no painel admin.
+  // O pedido já é salvo no banco de dados real pelo servidor assim que o
+  // checkout é criado (veja api/create-checkout-pagbank.js), com status
+  // inicial "Aguardando Pagamento". O status final só é conhecido quando a
+  // PagBank confirma o pagamento e chama nosso webhook (ver
+  // api/pagbank-webhook.js) — diferente do Mercado Pago, a PagBank não
+  // acrescenta o status como parâmetro na URL de retorno, então essa página
+  // consulta o status real no servidor (api/order-status.js) em vez de
+  // confiar em qualquer coisa vinda da própria URL.
+  const INTERNAL_STATUS_MAP = { 'Processando': 'approved', 'Aguardando Pagamento': 'pending', 'Cancelado': 'rejected' };
 
-  /* ---------------- Carrinho só é esvaziado quando o pagamento é aprovado ----------------
-     Antes, o carrinho era limpo assim que o cliente clicava em "Finalizar
-     Compra" (ainda no checkout.html), mesmo que o pagamento não fosse
-     concluído. Resultado: se o Pix não era pago, o boleto não compensava ou
-     o cliente simplesmente fechava a aba do Mercado Pago, os produtos
-     desapareciam do carrinho — obrigando a montar tudo de novo para tentar
-     pagar outra vez. Agora só limpamos o carrinho aqui, e só quando o
-     Mercado Pago confirma o pagamento como aprovado. */
-  if (mpStatus === 'approved') {
-    localStorage.removeItem('cb3d_coupon');
-    Cart.clear();
-  } else if (mpStatus) {
-    // Pendente, em análise, recusado ou não concluído: mantém o carrinho
-    // intacto e troca o botão secundário para levar direto de volta ao
-    // checkout, já que os itens continuam lá.
-    const cta = document.getElementById('ctaSecundario');
-    if (cta) { cta.textContent = 'Concluir Pagamento'; cta.href = 'checkout.html'; }
-    const msg = document.getElementById('carrinhoMantidoMsg');
-    if (msg) msg.style.display = 'block';
+  async function checkOrderStatus(attemptsLeft){
+    if (!orderCode) return;
+    let data;
+    try {
+      const resp = await fetch(`/api/order-status?id=${encodeURIComponent(orderCode)}`);
+      if (!resp.ok) return;
+      data = await resp.json();
+    } catch (e) { return; }
+    const mapped = INTERNAL_STATUS_MAP[data.status];
+    if (mapped) applyStatus(mapped);
+    if (data.total) document.getElementById('orderTotal').textContent = formatBRL(data.total);
+    // O webhook da PagBank costuma chegar poucos segundos depois do cliente
+    // voltar pra essa página — se ainda estiver "Aguardando Pagamento",
+    // tenta de novo mais algumas vezes antes de desistir e deixar como
+    // pendente (o cliente sempre pode conferir depois em "Meus Pedidos").
+    if (data.status === 'Aguardando Pagamento' && attemptsLeft > 0) {
+      setTimeout(() => checkOrderStatus(attemptsLeft - 1), 3000);
+    }
   }
+  checkOrderStatus(5);
 </script>
 </body>
 </html>

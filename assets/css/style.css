@@ -179,6 +179,11 @@ header.site-header.scrolled { box-shadow: 0 4px 20px rgba(0,0,0,.06); }
 .prod-fav.active svg { fill: var(--black); }
 .prod-quick { position: absolute; left: 0; right: 0; bottom: -60px; display: flex; gap: 8px; padding: 12px; transition: bottom .3s var(--ease); z-index: 2; }
 .prod-card:hover .prod-quick { bottom: 0; }
+/* Sem min-width:0, um botão flex:1 não encolhe menor que o texto dele
+   ("Comprar"/"Ver Produto") — em cards mais estreitos (grades de 3+
+   colunas) isso empurrava o botão pra fora da foto e o .prod-media
+   (overflow:hidden) cortava a ponta dele. */
+.prod-quick .btn { min-width: 0; }
 .prod-body { padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .prod-cat { font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
 .prod-name { font-size: 14.5px; font-weight: 600; line-height: 1.35; min-height: 38px; }
@@ -351,6 +356,13 @@ footer.site-footer { background: var(--black); color: var(--gray-300); }
 @media (max-width: 640px) {
   .cat-grid { grid-template-columns: repeat(2,1fr); }
   .prod-grid { grid-template-columns: repeat(2,1fr); gap: 14px; }
+  /* No card de 2 colunas do celular, os botões "Ver Produto"/"Comprar" que
+     aparecem sobrepostos na foto (.prod-quick, feito pra hover no desktop)
+     não cabem lado a lado e o "Comprar" ficava cortado na borda da imagem.
+     Como esses mesmos dois botões já aparecem sempre visíveis embaixo do
+     card (.prod-actions), a solução é simplesmente esconder essa sobreposição
+     no mobile — nenhuma ação é perdida, só some a duplicata que não cabia. */
+  .prod-quick { display: none; }
   .why-grid { grid-template-columns: repeat(2,1fr); }
   .process-row { grid-template-columns: repeat(2,1fr); }
   .review-grid { grid-template-columns: 1fr; }

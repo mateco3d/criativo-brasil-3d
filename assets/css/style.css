@@ -193,7 +193,12 @@ header.site-header.scrolled { box-shadow: 0 4px 20px rgba(0,0,0,.06); }
 .prod-old { text-decoration: line-through; color: var(--gray-500); font-size: 13px; }
 .prod-new { font-size: 19px; font-weight: 800; color: var(--black); }
 .prod-installment { font-size: 12px; color: var(--gray-500); }
-.prod-actions { display: flex; gap: 8px; margin-top: 10px; }
+/* margin-top:auto (em vez de um valor fixo) gruda os botões sempre no
+   rodapé do card, não importa quantas linhas o nome do produto ocupe —
+   antes, um produto com nome curto (1 linha) tinha os botões bem mais
+   pra cima que um produto com nome longo (3-4 linhas), porque os botões
+   só vinham logo depois do texto, e não fixos embaixo. */
+.prod-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 10px; }
 .prod-actions .btn { flex: 1; padding: 10px 12px; font-size: 12.5px; }
 
 /* ---------- Carousel row ---------- */

@@ -16,6 +16,13 @@
   .filter-opt { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 13.5px; cursor: pointer; }
   .filter-opt input { accent-color: var(--gold); width: 16px; height: 16px; }
   .filter-divider { height: 1px; background: #eee; margin: 18px 0; }
+  .cat-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 7px 0; }
+  .cat-row label { display: flex; align-items: center; gap: 10px; font-size: 13.5px; cursor: pointer; flex: 1; }
+  .cat-row label input { accent-color: var(--gold); width: 16px; height: 16px; }
+  .cat-toggle { background: none; border: none; cursor: pointer; color: var(--gray-500); font-size: 12px; padding: 4px 6px; line-height: 1; transition: transform .2s var(--ease); }
+  .cat-toggle.open { transform: rotate(180deg); }
+  .subcat-list { display: none; padding-left: 10px; }
+  .subcat-list.open { display: block; }
   .shop-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; flex-wrap: wrap; gap: 12px; }
   .shop-count { font-size: 13.5px; color: var(--gray-500); }
   select#sortSelect { padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e2e2; font-size: 13px; }
@@ -84,14 +91,38 @@
 <script>
   mountLayout('produtos.html');
 
-  // Subcategorias aparecem indentadas logo abaixo da categoria a que
-  // pertencem (ex.: "Casa" > "Banheiro"). O valor do checkbox de
-  // subcategoria é "categoria::subcategoria" para não colidir caso duas
-  // categorias diferentes tenham uma subcategoria com o mesmo slug.
-  document.getElementById('catFilters').innerHTML = CATEGORIES.map(c => `
-    <label class="filter-opt"><input type="checkbox" class="catFilter" value="${c.slug}"> ${c.name}</label>
-    ${(c.subcategories||[]).map(s=>`<label class="filter-opt" style="padding-left:20px;font-size:12.5px"><input type="checkbox" class="subcatFilter" value="${c.slug}::${s.slug}"> ${s.name}</label>`).join('')}`
-  ).join('');
+  // Subcategorias ficam escondidas por padrão (senão a lista fica enorme e
+  // com informação demais). Elas só aparecem quando o cliente clica na
+  // setinha ao lado da categoria principal — clicar no nome/checkbox da
+  // categoria continua só filtrando por ela, sem precisar abrir a lista.
+  // O valor do checkbox de subcategoria é "categoria::subcategoria" para
+  // não colidir caso duas categorias diferentes tenham uma subcategoria
+  // com o mesmo slug.
+  document.getElementById('catFilters').innerHTML = CATEGORIES.map(c => {
+    const hasSubs = (c.subcategories||[]).length > 0;
+    return `
+    <div class="cat-group" data-cat="${c.slug}">
+      <div class="cat-row">
+        <label><input type="checkbox" class="catFilter" value="${c.slug}"> ${c.name}</label>
+        ${hasSubs ? `<button type="button" class="cat-toggle" data-cat="${c.slug}" aria-label="Mostrar subcategorias de ${c.name}">▾</button>` : ''}
+      </div>
+      ${hasSubs ? `<div class="subcat-list" data-cat="${c.slug}">
+        ${c.subcategories.map(s=>`<label class="filter-opt" style="padding-left:20px;font-size:12.5px"><input type="checkbox" class="subcatFilter" value="${c.slug}::${s.slug}"> ${s.name}</label>`).join('')}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  function toggleSubcats(catSlug, forceOpen){
+    const btn = document.querySelector(`.cat-toggle[data-cat="${catSlug}"]`);
+    const list = document.querySelector(`.subcat-list[data-cat="${catSlug}"]`);
+    if (!btn || !list) return;
+    const open = forceOpen !== undefined ? forceOpen : !list.classList.contains('open');
+    list.classList.toggle('open', open);
+    btn.classList.toggle('open', open);
+  }
+  document.querySelectorAll('.cat-toggle').forEach(btn => {
+    btn.addEventListener('click', () => toggleSubcats(btn.dataset.cat));
+  });
 
   const params = new URLSearchParams(location.search);
   if (params.get('cat')) {
@@ -99,6 +130,10 @@
     if (cb) cb.checked = true;
     const cat = CATEGORIES.find(c=>c.slug===params.get('cat'));
     if (cat) { document.getElementById('pageTitle').textContent = cat.name; document.getElementById('pageSub').textContent = cat.desc; document.getElementById('bcCurrent').textContent = cat.name; }
+    // Chegando de um link com categoria/subcategoria na URL, já deixa a
+    // lista de subcategorias dessa categoria aberta (senão o cliente não
+    // veria nem que o filtro de subcategoria está marcado).
+    toggleSubcats(params.get('cat'), true);
     if (params.get('subcat')) {
       const scb = document.querySelector(`.subcatFilter[value="${params.get('cat')}::${params.get('subcat')}"]`);
       if (scb) {

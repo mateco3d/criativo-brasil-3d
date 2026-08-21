@@ -14,10 +14,13 @@
   .pd-gallery-main { aspect-ratio: 1/1; border-radius: var(--radius); background: linear-gradient(145deg,#f4f4f4,#e9e9e9); display:flex; align-items:center; justify-content:center; overflow:hidden; cursor: zoom-in; position: relative; }
   .pd-gallery-main svg { width: 46%; height: 46%; color: var(--black); transition: transform .4s var(--ease); }
   .pd-gallery-main.zoomed svg { transform: scale(1.8); }
+  .pd-gallery-main img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s var(--ease); }
+  .pd-gallery-main.zoomed img { transform: scale(1.8); }
   .pd-thumbs { display: flex; gap: 10px; margin-top: 14px; }
-  .pd-thumb { width: 74px; height: 74px; border-radius: 10px; background: linear-gradient(145deg,#f4f4f4,#e9e9e9); display: flex; align-items: center; justify-content: center; border: 2px solid transparent; cursor: pointer; }
+  .pd-thumb { width: 74px; height: 74px; border-radius: 10px; background: linear-gradient(145deg,#f4f4f4,#e9e9e9); display: flex; align-items: center; justify-content: center; border: 2px solid transparent; cursor: pointer; overflow: hidden; }
   .pd-thumb.active { border-color: var(--gold); }
   .pd-thumb svg { width: 42%; height: 42%; color: var(--black); }
+  .pd-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .pd-cat { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--gray-500); font-weight: 700; }
   .pd-title { font-size: clamp(22px,3vw,32px); margin: 8px 0 12px; }
   .pd-rating { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gray-500); margin-bottom: 18px; }
@@ -163,10 +166,26 @@
       `<span class="sep">/</span><a href="produtos.html?cat=${p.cat}&subcat=${p.subcat}">${subObj.name}</a>`);
   }
 
-  document.getElementById('pdMain').innerHTML = iconFor(p.cat);
-  document.getElementById('pdThumbs').innerHTML = Array.from({length:4}).map((_,i)=>`<div class="pd-thumb ${i===0?'active':''}">${iconFor(p.cat)}</div>`).join('');
-  document.getElementById('pdMain').addEventListener('click', function(){ this.classList.toggle('zoomed'); });
-  document.querySelectorAll('.pd-thumb').forEach(t=>t.addEventListener('click', function(){ document.querySelectorAll('.pd-thumb').forEach(x=>x.classList.remove('active')); this.classList.add('active'); }));
+  // Galeria: usa as fotos reais cadastradas no admin (p.images) quando
+  // existirem; se o produto não tiver foto nenhuma, cai no ícone da
+  // categoria como antes (produtos antigos / ainda sem foto).
+  const pdImages = (p.images && p.images.length) ? p.images : null;
+  const pdMainEl = document.getElementById('pdMain');
+  function setMainImage(idx){
+    pdMainEl.innerHTML = pdImages
+      ? `<img src="${pdImages[idx]}" alt="${p.name}">`
+      : iconFor(p.cat);
+  }
+  setMainImage(0);
+  document.getElementById('pdThumbs').innerHTML = pdImages
+    ? pdImages.map((src,i)=>`<div class="pd-thumb ${i===0?'active':''}" data-idx="${i}"><img src="${src}" alt="${p.name}"></div>`).join('')
+    : Array.from({length:4}).map((_,i)=>`<div class="pd-thumb ${i===0?'active':''}">${iconFor(p.cat)}</div>`).join('');
+  pdMainEl.addEventListener('click', function(){ this.classList.toggle('zoomed'); });
+  document.querySelectorAll('.pd-thumb').forEach(t=>t.addEventListener('click', function(){
+    document.querySelectorAll('.pd-thumb').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+    if (pdImages && this.dataset.idx !== undefined) { setMainImage(parseInt(this.dataset.idx,10)); pdMainEl.classList.remove('zoomed'); }
+  }));
 
   document.getElementById('pdCat').textContent = catObj.name;
   document.getElementById('pdName').textContent = p.name;

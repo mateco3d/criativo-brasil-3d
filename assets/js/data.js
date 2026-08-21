@@ -69,13 +69,12 @@ const BANNERS = [
 ];
 
 // ---------- Avaliações (home) ----------
+// Esvaziado a pedido do usuário (21/08) — eram depoimentos fictícios de
+// exemplo, vários citando produtos que não serão vendidos de verdade. A
+// seção "Depoimentos" da home (index.html) some sozinha enquanto este
+// array estiver vazio. Adicione aqui avaliações reais aos poucos, conforme
+// os produtos forem sendo anunciados — formato: { name, loc, text, stars }.
 const REVIEWS = [
-  { name:'Camila Souza', loc:'São Paulo, SP', text:'Comprei o Funko personalizado e ficou idêntico à foto que mandei! Acabamento impecável e chegou super rápido.', stars:5 },
-  { name:'Rafael Lima', loc:'Belo Horizonte, MG', text:'A luminária lua ficou show na sala. Qualidade de impressão excelente, recomendo demais a loja.', stars:5 },
-  { name:'Juliana Prado', loc:'Curitiba, PR', text:'Pedi peças personalizadas para o meu carro, ficaram perfeitas e o suporte deles foi muito atencioso.', stars:5 },
-  { name:'Diego Martins', loc:'Porto Alegre, RS', text:'Já é a terceira compra que faço, sempre chega bem embalado e no prazo combinado.', stars:4 },
-  { name:'Fernanda Alves', loc:'Salvador, BA', text:'O topo de bolo personalizado foi o toque especial da festa da minha filha. Amei o resultado!', stars:5 },
-  { name:'Bruno Castro', loc:'Recife, PE', text:'Ótimo custo-benefício e atendimento rápido pelo WhatsApp. Voltarei a comprar com certeza.', stars:5 },
 ];
 
 // ---------- Perguntas e respostas (produto) ----------

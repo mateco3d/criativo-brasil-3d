@@ -69,12 +69,13 @@
           <div class="form-row cols-3">
             <div class="form-group"><label>Material</label><input type="text" id="f_material" value="${e.material||''}"></div>
           </div>
-          <label style="display:block;margin:14px 0 6px">Dimensões da embalagem (cm)</label>
-          <p style="font-size:12.5px;color:var(--gray-500);margin:-2px 0 10px">Aparece como especificação na página do produto ("Tamanho"). Deixe em branco se não souber ainda.</p>
-          <div class="form-row cols-3">
+          <label style="display:block;margin:14px 0 6px">Dimensões e peso da embalagem</label>
+          <p style="font-size:12.5px;color:var(--gray-500);margin:-2px 0 10px">Aparece como especificação na página do produto ("Tamanho") e é usado para calcular o frete real (Correios/Melhor Envio). Deixe em branco se não souber ainda — mas pese o produto numa balança antes de vender de verdade, senão o frete cobrado do cliente pode ficar diferente do custo real do envio.</p>
+          <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
             <div class="form-group"><label>Comprimento</label><input type="number" step="0.1" min="0" id="f_length" value="${e.length_cm ?? ''}" placeholder="cm"></div>
             <div class="form-group"><label>Largura</label><input type="number" step="0.1" min="0" id="f_width" value="${e.width_cm ?? ''}" placeholder="cm"></div>
             <div class="form-group"><label>Altura</label><input type="number" step="0.1" min="0" id="f_height" value="${e.height_cm ?? ''}" placeholder="cm"></div>
+            <div class="form-group"><label>Peso (kg)</label><input type="number" step="0.001" min="0" id="f_weight" value="${e.weight_kg ?? ''}" placeholder="kg"></div>
           </div>
         </div>
 
@@ -272,6 +273,7 @@
     const length_cm = parseFloat(document.getElementById('f_length').value);
     const width_cm = parseFloat(document.getElementById('f_width').value);
     const height_cm = parseFloat(document.getElementById('f_height').value);
+    const weight_kg = parseFloat(document.getElementById('f_weight').value);
     // Slug: usa o que estiver no campo (se o admin editou manualmente) ou
     // gera do nome; nunca fica em branco, e nunca colide com o slug de
     // outro produto já cadastrado (ver uniqueSlug acima).
@@ -289,6 +291,7 @@
       length_cm: isNaN(length_cm) ? null : length_cm,
       width_cm: isNaN(width_cm) ? null : width_cm,
       height_cm: isNaN(height_cm) ? null : height_cm,
+      weight_kg: isNaN(weight_kg) ? null : weight_kg,
       colors, images, tags,
       rating: e.rating || 5, reviews: e.reviews || 0,
     };

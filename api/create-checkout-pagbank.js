@@ -197,16 +197,24 @@ module.exports = async function handler(req, res) {
                 return;
        }
 
-       const checkoutUrl = (data.links || []).find((l) => l.rel === 'PAY' || l.rel === 'SELF')?.href || data.checkout_url;
-
-       // DIAGNÓSTICO TEMPORÁRIO (04/10) — remover depois de confirmado o problema
-       // do link de pagamento. Loga e devolve data.links cru pra investigar por
-       // que o link "PAY" não está vindo mais da PagBank.
-       console.log('[DIAGNÓSTICO] data.links completo:', JSON.stringify(data.links));
-            if (req.query && req.query.debug === '1') {
-                     res.status(200).json({ debugLinks: data.links, debugFullResponse: data });
+       // BUG CORRIGIDO (29/10): o código antigo usava
+       // `.find((l) => l.rel === 'PAY' || l.rel === 'SELF')`, que devolve o
+       // PRIMEIRO link do array que bater com qualquer uma das duas condições.
+       // A PagBank manda o array nesta ordem: SELF, PAY, INACTIVATE — ou seja,
+       // "SELF" (o endereço da API, não uma página de pagamento) sempre vencia
+       // antes de "PAY" ser sequer checado. O cliente era mandado para
+       // api.pagseguro.com/checkouts/ID, que devolve erro de autorização em
+       // vez da tela de pagamento — nenhuma venda real conseguia ser concluída.
+       // Agora buscamos o link "PAY" especificamente (nunca "SELF" como
+       // redirecionamento do cliente); se por algum motivo a PagBank não
+       // devolver esse link, devolvemos um erro claro em vez de um link quebrado.
+       const payLink = (data.links || []).find((l) => l.rel === 'PAY');
+            if (!payLink || !payLink.href) {
+                     console.log('[PagBank] Link de pagamento (rel=PAY) ausente na resposta:', JSON.stringify(data.links));
+                     res.status(502).json({ error: 'Não foi possível gerar o link de pagamento agora. Tente novamente em instantes.' });
                      return;
             }
+            const checkoutUrl = payLink.href;
 
        // 5) Salva o pedido no banco de dados (status inicial: aguardando
        //    pagamento). O webhook (api/pagbank-webhook.js) atualiza o status

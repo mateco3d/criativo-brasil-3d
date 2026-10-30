@@ -10,8 +10,8 @@
    - STORE_WHATSAPP: só dígitos, com código do país (55) + DDD + número.
    - STORE_PHONE_DISPLAY: o mesmo número, formatado para exibição.
 */
-const STORE_WHATSAPP = '5511912345678'; // TODO: troque pelo número real da loja
-const STORE_PHONE_DISPLAY = '(11) 91234-5678'; // TODO: troque pelo telefone formatado
+const STORE_WHATSAPP = '5513982289358';
+const STORE_PHONE_DISPLAY = '(13) 98228-9358';
 function waLink(text){
   return `https://wa.me/${STORE_WHATSAPP}${text ? '?text=' + encodeURIComponent(text) : ''}`;
 }

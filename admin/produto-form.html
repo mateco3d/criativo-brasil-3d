@@ -91,6 +91,19 @@
         </div>
 
         <div class="admin-panel kv-form">
+          <h3>Personalização</h3>
+          <p style="font-size:12.5px;color:var(--gray-500);margin:-4px 0 12px">Ative se este produto puder ser personalizado pelo cliente (ex.: gravar um nome, uma frase). Se não ativar, o produto não mostra esse campo — fica igual aos demais.</p>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;margin-bottom:12px">
+            <input type="checkbox" id="f_customizable" ${e.customizable ? 'checked' : ''}> Este produto permite personalização
+          </label>
+          <div class="form-group">
+            <label>Rótulo do campo <span style="font-weight:400;color:var(--gray-500)">— o que o cliente vai ver (opcional)</span></label>
+            <input type="text" id="f_customizeLabel" value="${e.customizeLabel||''}" placeholder="ex.: Nome para gravar na peça">
+          </div>
+          <p style="font-size:12px;color:var(--gray-500);margin:-6px 0 0">Se deixar em branco, aparece como "Personalização" na página do produto. O texto que o cliente digitar fica salvo junto com o pedido e aparece em Painel → Pedidos.</p>
+        </div>
+
+        <div class="admin-panel kv-form">
           <h3>Imagens e Vídeos</h3>
           <p style="font-size:12.5px;color:var(--gray-500);margin:-4px 0 12px">Arraste as fotos aqui ou clique para escolher do computador. A primeira foto vira a capa do produto (a que aparece no card da loja) — clique em "Tornar capa" em qualquer outra foto para trocar qual é a principal.</p>
           <div id="f_imgDrop" class="prod-img-drop">📷 Arraste imagens aqui ou clique para escolher do computador</div>
@@ -293,6 +306,8 @@
       height_cm: isNaN(height_cm) ? null : height_cm,
       weight_kg: isNaN(weight_kg) ? null : weight_kg,
       colors, images, tags,
+      customizable: document.getElementById('f_customizable').checked,
+      customizeLabel: document.getElementById('f_customizeLabel').value.trim() || null,
       rating: e.rating || 5, reviews: e.reviews || 0,
     };
     try {

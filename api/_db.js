@@ -91,6 +91,10 @@ async function ensureSchema() {
   // adicionada depois da tabela já existir em produção, por isso via ALTER
   // TABLE (o CREATE TABLE acima só roda na primeira vez).
   await sql`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS color TEXT`;
+  // Texto de personalização escolhido pelo cliente (quando o produto é
+  // marcado como personalizável — ver admin/produto-form.html e o campo de
+  // personalização em produto.html). Mesmo padrão da coluna `color` acima.
+  await sql`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS customization TEXT`;
   await sql`
     CREATE TABLE IF NOT EXISTS coupons (
       code TEXT PRIMARY KEY,

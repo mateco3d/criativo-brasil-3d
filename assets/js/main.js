@@ -52,7 +52,19 @@ const Cart = {
   key: 'cb3d_cart',
   get(){ try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e){ return []; } },
   save(items){ localStorage.setItem(this.key, JSON.stringify(items)); document.dispatchEvent(new CustomEvent('cart:update')); },
-  add(productId, qty=1, color=null){
+  add(productId, qty=1, color=null, custom=null){
+    const items = this.get();
+    const found = items.find(i => i.id === productId && (i.color||null) === (color||null) && (i.custom||null) === (custom||null));
+    if (found) found.qty += qty; else items.push({ id: productId, qty, color: color||null, custom: custom||null });
+    this.save(items);
+  },
+  setQty(productId, qty, color=null, custom=null){
+    let items = this.get();
+    if (qty <= 0) items = items.filter(i => !(i.id === productId && (i.color||null) === (color||null) && (i.custom||null) === (custom||null)));
+    else { const f = items.find(i=>i.id===productId && (i.color||null) === (color||null) && (i.custom||null) === (custom||null)); if (f) f.qty = qty; }
+    this.save(items);
+  },
+  remove(productId, color=null, custom=null){ this.save(this.get().filter(i => !(i.id === productId && (i.color||null) === (color||null) && (i.custom||null) === (custom||null)))); },
     const items = this.get();
     const found = items.find(i => i.id === productId && (i.color||null) === (color||null));
     if (found) found.qty += qty; else items.push({ id: productId, qty, color: color||null });
@@ -339,7 +351,16 @@ function showToast(title, msg){
   window.__toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
 }
 
-function addToCartWithFeedback(productId, qty=1, openCart=false, color=null){
+function addToCartWithFeedback(productId, qty=1, openCart=false, color=null, custom=null){
+  const p = getProduct(productId);
+  // Se o produto tem cores cadastradas e a chamada não veio de um seletor de
+  // cor (ex.: botão "Comprar" direto no card da listagem), usa a primeira
+  // cor cadastrada como padrão em vez de deixar a linha do carrinho sem cor.
+  const finalColor = color || (p && p.colors && p.colors[0] && p.colors[0].name) || null;
+  // Produtos personalizáveis não têm valor padrão possível (é texto livre do
+  // cliente) — por isso productCardHTML nunca chama esta função direto para
+  // eles (manda pra página do produto em vez de um "Comprar" rápido).
+  Cart.add(productId, qty, finalColor, custom || null);
   const p = getProduct(productId);
   // Se o produto tem cores cadastradas e a chamada não veio de um seletor de
   // cor (ex.: botão "Comprar" direto no card da listagem), usa a primeira
@@ -438,7 +459,9 @@ function productCardHTML(p){
       <button class="prod-fav ${isFav?'active':''}" onclick="toggleFav(this,'${p.id}')" aria-label="Favoritar">${ICO.heart}</button>
       <div class="prod-quick">
         <a href="produto.html?slug=${p.slug}" class="btn btn-black btn-sm" style="flex:1">Ver Produto</a>
-        <button class="btn btn-gold btn-sm" style="flex:1" onclick="addToCartWithFeedback('${p.id}',1,true)">Comprar</button>
+        ${p.customizable
+          ? `<a href="produto.html?slug=${p.slug}" class="btn btn-gold btn-sm" style="flex:1">Comprar</a>`
+          : `<button class="btn btn-gold btn-sm" style="flex:1" onclick="addToCartWithFeedback('${p.id}',1,true)">Comprar</button>`}
       </div>
     </div>
     <div class="prod-body">
@@ -451,7 +474,9 @@ function productCardHTML(p){
       <span class="prod-installment">${installmentText(p.promo||p.price)}</span>
       <div class="prod-actions">
         <a href="produto.html?slug=${p.slug}" class="btn btn-outline">Ver Produto</a>
-        <button class="btn btn-gold" onclick="addToCartWithFeedback('${p.id}',1,true)">Comprar</button>
+        ${p.customizable
+          ? `<a href="produto.html?slug=${p.slug}" class="btn btn-gold">Comprar</a>`
+          : `<button class="btn btn-gold" onclick="addToCartWithFeedback('${p.id}',1,true)">Comprar</button>`}
       </div>
     </div>
   </div>`;

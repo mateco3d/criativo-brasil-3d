@@ -41,6 +41,11 @@
   .pd-color-swatch span { display: block; width: 100%; height: 100%; border-radius: 50%; }
   .pd-color-swatch:hover { transform: scale(1.08); }
   .pd-color-swatch.active { border-color: var(--gold); }
+  .pd-custom-block { margin-bottom: 22px; }
+  .pd-custom-block label { font-size: 13px; font-weight: 700; margin-bottom: 10px; display: block; }
+  .pd-custom-block input { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1.5px solid #e2e2e2; font-size: 14px; box-sizing: border-box; }
+  .pd-custom-block input.pd-custom-error { border-color: var(--red); }
+  .pd-custom-err-msg { font-size: 12.5px; color: var(--red); margin-top: 6px; display: none; }
   .pd-buybox { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
   .pd-actions { display: flex; gap: 12px; }
   .pd-actions .btn { flex: 1; padding: 16px; }
@@ -90,6 +95,12 @@
       <div class="pd-color-block" id="pdColorBlock" style="display:none">
         <div class="pd-color-label">Cor: <span id="pdColorSelectedName"></span></div>
         <div class="pd-color-swatches" id="pdColorSwatches"></div>
+      </div>
+
+      <div class="pd-custom-block" id="pdCustomBlock" style="display:none">
+        <label for="pdCustomInput" id="pdCustomLabel">Personalização</label>
+        <input type="text" id="pdCustomInput" maxlength="200" placeholder="Digite aqui...">
+        <p class="pd-custom-err-msg" id="pdCustomErrMsg">Preencha este campo antes de continuar — este produto é personalizado.</p>
       </div>
 
       <div class="pd-specs" id="pdSpecs"></div>
@@ -227,6 +238,33 @@
     renderColorSwatches();
   }
 
+  // ---------- Campo de personalização ----------
+  // Só aparece quando o produto está marcado como personalizável no admin
+  // (p.customizable — ver admin/produto-form.html). Diferente da cor (que
+  // sempre tem um valor padrão), aqui é texto livre do cliente, então não
+  // dá pra supor um valor — por isso é obrigatório preencher antes de
+  // adicionar ao carrinho ou comprar.
+  if (p.customizable) {
+    document.getElementById('pdCustomBlock').style.display = '';
+    document.getElementById('pdCustomLabel').textContent = p.customizeLabel || 'Personalização';
+    document.getElementById('pdCustomInput').placeholder = `Digite aqui (ex.: ${p.customizeLabel || 'o texto que você quer'})`;
+    document.getElementById('pdCustomInput').addEventListener('input', function(){
+      this.classList.remove('pd-custom-error');
+      document.getElementById('pdCustomErrMsg').style.display = 'none';
+    });
+  }
+  function getCustomValue(){
+    if (!p.customizable) return null;
+    const val = document.getElementById('pdCustomInput').value.trim();
+    if (!val) {
+      document.getElementById('pdCustomInput').classList.add('pd-custom-error');
+      document.getElementById('pdCustomErrMsg').style.display = 'block';
+      document.getElementById('pdCustomInput').focus();
+      return undefined; // sinaliza "inválido" sem confundir com null (sem personalização)
+    }
+    return val;
+  }
+
   function renderFavBtn(){
     const active = Favorites.has(p.id);
     document.getElementById('pdFavBtn').classList.toggle('active', active);
@@ -240,8 +278,17 @@
     inp.value = Math.max(1, (parseInt(inp.value)||1) + delta);
     renderCouponDiscount();
   };
-  window.addCurrentToCart = function(){ addToCartWithFeedback(p.id, parseInt(document.getElementById('qtyInput').value)||1, true, selectedColor); };
-  window.buyNow = function(){ addToCartWithFeedback(p.id, parseInt(document.getElementById('qtyInput').value)||1, false, selectedColor); location.href='checkout.html'; };
+  window.addCurrentToCart = function(){
+    const custom = getCustomValue();
+    if (custom === undefined) return; // produto personalizável sem o campo preenchido
+    addToCartWithFeedback(p.id, parseInt(document.getElementById('qtyInput').value)||1, true, selectedColor, custom);
+  };
+  window.buyNow = function(){
+    const custom = getCustomValue();
+    if (custom === undefined) return;
+    addToCartWithFeedback(p.id, parseInt(document.getElementById('qtyInput').value)||1, false, selectedColor, custom);
+    location.href='checkout.html';
+  };
 
   // ---------- Cupom de desconto (validado no servidor) ----------
   // O código fica salvo no mesmo localStorage usado pelo carrinho e pelo

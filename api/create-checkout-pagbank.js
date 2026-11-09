@@ -81,7 +81,8 @@ module.exports = async function handler(req, res) {
                      return;
             }
             const color = raw && raw.color ? String(raw.color).slice(0, 80) : null;
-            lines.push({ product, qty, unit: unitPrice(product), color });
+            const customization = raw && raw.customization ? String(raw.customization).slice(0, 200) : null;
+            lines.push({ product, qty, unit: unitPrice(product), color, customization });
      }
      const subtotal = round2(lines.reduce((sum, l) => sum + l.unit * l.qty, 0));
 
@@ -240,8 +241,8 @@ module.exports = async function handler(req, res) {
                            const l = lines[i];
                            const lineTotal = round2(l.unit * l.qty - (discountPerLine[i] || 0));
                            await sql`
-                                     INSERT INTO order_items (order_id, product_id, name, cat, qty, price, color)
-                                               VALUES (${orderCode}, ${l.product.id}, ${l.product.name}, ${l.product.cat || null}, ${l.qty}, ${lineTotal}, ${l.color || null})
+                                     INSERT INTO order_items (order_id, product_id, name, cat, qty, price, color, customization)
+                                               VALUES (${orderCode}, ${l.product.id}, ${l.product.name}, ${l.product.cat || null}, ${l.qty}, ${lineTotal}, ${l.color || null}, ${l.customization || null})
                                                        `;
                 }
                 if (couponApplied) {

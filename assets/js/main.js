@@ -65,18 +65,6 @@ const Cart = {
     this.save(items);
   },
   remove(productId, color=null, custom=null){ this.save(this.get().filter(i => !(i.id === productId && (i.color||null) === (color||null) && (i.custom||null) === (custom||null)))); },
-    const items = this.get();
-    const found = items.find(i => i.id === productId && (i.color||null) === (color||null));
-    if (found) found.qty += qty; else items.push({ id: productId, qty, color: color||null });
-    this.save(items);
-  },
-  setQty(productId, qty, color=null){
-    let items = this.get();
-    if (qty <= 0) items = items.filter(i => !(i.id === productId && (i.color||null) === (color||null)));
-    else { const f = items.find(i=>i.id===productId && (i.color||null) === (color||null)); if (f) f.qty = qty; }
-    this.save(items);
-  },
-  remove(productId, color=null){ this.save(this.get().filter(i => !(i.id === productId && (i.color||null) === (color||null)))); },
   clear(){ this.save([]); },
   count(){ return this.get().reduce((a,i)=>a+i.qty,0); },
   lines(){
@@ -361,12 +349,6 @@ function addToCartWithFeedback(productId, qty=1, openCart=false, color=null, cus
   // cliente) — por isso productCardHTML nunca chama esta função direto para
   // eles (manda pra página do produto em vez de um "Comprar" rápido).
   Cart.add(productId, qty, finalColor, custom || null);
-  const p = getProduct(productId);
-  // Se o produto tem cores cadastradas e a chamada não veio de um seletor de
-  // cor (ex.: botão "Comprar" direto no card da listagem), usa a primeira
-  // cor cadastrada como padrão em vez de deixar a linha do carrinho sem cor.
-  const finalColor = color || (p && p.colors && p.colors[0] && p.colors[0].name) || null;
-  Cart.add(productId, qty, finalColor);
   showToast('Adicionado ao carrinho', p ? p.name : 'Produto adicionado');
   if (openCart && window.openMinicart) window.openMinicart();
 }

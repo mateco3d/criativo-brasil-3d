@@ -21,16 +21,10 @@
 =================================================================== */
 
 const PRODUCTS = [
-   // ---------------------------------------------------------------
-   // Catálogo zerado a pedido do usuário em 30/10 — tanto os produtos
-   // reais cadastrados até então (Portão Cartão, Cruz Vazada, Letreiro
-   // Cristo Vive, Suporte PS5/PS4) quanto o catálogo de demonstração
-   // antigo (p01-p24) foram removidos daqui para começar o cadastro de
-   // produtos reais do zero (ver claude/site-progresso.md). Sempre que
-   // um produto novo for cadastrado no painel admin, ele precisa ser
-   // adicionado aqui também (catálogo "oficial" para cobrança/frete —
-   // ver comentário no topo do arquivo), senão o cliente verá "Produto
-   // inválido" ao tentar pagar.
+   { id: 'p1787945732698', name: 'Portão Cartão (Pode Personalizar)', cat: 'escritorio', price: 14.99, promo: null, weight_kg: 0.3, length_cm: 10, width_cm: 2.2, height_cm: 3.1 },
+   { id: 'p1787943475591', name: 'Cruz Vazada', cat: 'artigo-religioso', price: 18.99, promo: null, weight_kg: 0.4, length_cm: 17, width_cm: 12.5, height_cm: 4 },
+   { id: 'p1787343733424', name: 'Letreiro Cristo Vive', cat: 'artigo-religioso', price: 22, promo: null, weight_kg: 0.86, length_cm: 16, width_cm: 11, height_cm: 6 },
+   { id: 'p1787287049399', name: 'Suporte para 2 Controles PS5/PS4 Branco e Preto', cat: 'games', price: 20.99, promo: null, weight_kg: 0.86, length_cm: 16, width_cm: 11, height_cm: 6 },
    ];
 
 function getProduct(id) {

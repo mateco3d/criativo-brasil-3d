@@ -24,17 +24,17 @@ const AICO = {
 
 const NAV_ITEMS = [
   { group: 'Visão Geral', items: [
-    { href:'index.html', label:'Dashboard', ic:'dash' },
+    { href:'/admin/index.html', label:'Dashboard', ic:'dash' },
   ]},
   { group: 'Catálogo', items: [
-    { href:'produtos.html', label:'Produtos', ic:'box' },
-    { href:'categorias.html', label:'Categorias', ic:'tag' },
-    { href:'banners.html', label:'Banners', ic:'banner' },
+    { href:'/admin/produtos.html', label:'Produtos', ic:'box' },
+    { href:'/admin/categorias.html', label:'Categorias', ic:'tag' },
+    { href:'/admin/banners.html', label:'Banners', ic:'banner' },
   ]},
   { group: 'Vendas', items: [
-    { href:'pedidos.html', label:'Pedidos', ic:'cart' },
-    { href:'cupons.html', label:'Cupons e Promoções', ic:'coupon' },
-    { href:'clientes.html', label:'Clientes', ic:'users' },
+    { href:'/admin/pedidos.html', label:'Pedidos', ic:'cart' },
+    { href:'/admin/cupons.html', label:'Cupons e Promoções', ic:'coupon' },
+    { href:'/admin/clientes.html', label:'Clientes', ic:'users' },
   ]},
 ];
 
@@ -42,7 +42,7 @@ function adminLayout(active, title, subtitle){
   document.body.classList.add('admin-body');
   const nav = NAV_ITEMS.map(g => `
     <div class="nav-label">${g.group}</div>
-    ${g.items.map(i => `<a href="${i.href}" class="${active===i.href?'active':''}">${AICO[i.ic]}<span>${i.label}</span>${i.href==='pedidos.html'?'<span id="navOrdersBadge" class="nav-badge">0</span>':''}</a>`).join('')}
+    ${g.items.map(i => `<a href="${i.href}" class="${('/admin/'+active)===i.href?'active':''}">${AICO[i.ic]}<span>${i.label}</span>${i.href==='/admin/pedidos.html'?'<span id="navOrdersBadge" class="nav-badge">0</span>':''}</a>`).join('')}
   `).join('');
 
   document.body.insertAdjacentHTML('afterbegin', `

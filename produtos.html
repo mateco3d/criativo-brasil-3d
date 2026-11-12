@@ -89,6 +89,8 @@
 <script src="assets/js/data.js"></script>
 <script src="assets/js/main.js"></script>
 <script>
+  (async function(){
+  await window.CB3D_READY;
   mountLayout('produtos.html');
 
   // Subcategorias ficam escondidas por padrão (senão a lista fica enorme e
@@ -186,6 +188,9 @@
   }
   document.querySelectorAll('.catFilter,.subcatFilter,.tagFilter').forEach(c=>c.addEventListener('change', applyFilters));
   applyFilters();
+  window.applyFilters = applyFilters;
+  window.clearFilters = clearFilters;
+  })();
 </script>
 </body>
 </html>

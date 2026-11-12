@@ -1,5 +1,5 @@
 /* ===================================================================
-   CRIATIVO BRASIL 3D — Admin Panel JS (layout + mock CRUD via localStorage)
+   CRIATIVO BRASIL 3D — Admin Panel JS (layout + CRUD via API/banco real)
 =================================================================== */
 
 const AICO = {
@@ -46,23 +46,23 @@ function adminLayout(active, title, subtitle){
   `).join('');
 
   document.body.insertAdjacentHTML('afterbegin', `
-    <div class="admin-shell">
-      <aside class="admin-sidebar" id="adminSidebar">
-        <div class="admin-logo"><img class="mark" src="../assets/img/logo.png" alt="Criativo Brasil 3D"> Criativo Brasil 3D<br><small style="font-weight:400;color:#888;font-size:10px">Painel Admin</small></div>
-        <nav class="admin-nav">${nav}</nav>
-        <a href="../index.html" class="admin-back">← Voltar para a loja</a>
-      </aside>
-      <main class="admin-main">
-        <div class="admin-topbar">
-          <div style="display:flex;align-items:center;gap:14px">
-            <button class="btn-icon admin-burger" id="adminBurger">${AICO.menu}</button>
-            <div><h1>${title}</h1><p>${subtitle||''}</p></div>
-          </div>
-          <div class="admin-profile"><div class="av">AD</div><div><div style="font-size:12.5px;font-weight:700">Administrador</div><div style="font-size:11px;color:#999">criativo3dbrasil@gmail.com</div></div></div>
+  <div class="admin-shell">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <div class="admin-logo"><img class="mark" src="../assets/img/logo.png" alt="Criativo Brasil 3D"> Criativo Brasil 3D<br><small style="font-weight:400;color:#888;font-size:10px">Painel Admin</small></div>
+      <nav class="admin-nav">${nav}</nav>
+      <a href="../index.html" class="admin-back">← Voltar para a loja</a>
+    </aside>
+    <main class="admin-main">
+      <div class="admin-topbar">
+        <div style="display:flex;align-items:center;gap:14px">
+          <button class="btn-icon admin-burger" id="adminBurger">${AICO.menu}</button>
+          <div><h1>${title}</h1><p>${subtitle||''}</p></div>
         </div>
-        <div id="adminContent"></div>
-      </main>
-    </div>`);
+        <div class="admin-profile"><div class="av">AD</div><div><div style="font-size:12.5px;font-weight:700">Administrador</div><div style="font-size:11px;color:#999">criativo3dbrasil@gmail.com</div></div></div>
+      </div>
+      <div id="adminContent"></div>
+    </main>
+  </div>`);
 
   const burger = document.getElementById('adminBurger');
   if (burger) burger.addEventListener('click', ()=> document.getElementById('adminSidebar').classList.toggle('open'));
@@ -152,43 +152,36 @@ function barChart(data, opts={}){
   </div>`;
 }
 
-/* ---------------- Admin Store (mock CRUD via localStorage) ----------------
-   Em produção: substituído por chamadas a /api/admin/* (Next.js API Routes
-   + Prisma). Ver prisma/schema.prisma e docs/ARQUITETURA.md */
+/* ---------------- Admin Store (CRUD via /api/store, banco real) ----------------
+   Até 11/11 este objeto gravava produtos/categorias/banners só no
+   localStorage do navegador (por isso um produto cadastrado no computador
+   nunca aparecia no celular, e vice-versa — ver claude/site-progresso.md).
+   Agora cada leitura/gravação passa pelo servidor (api/store.js), que
+   grava num banco de dados real (Postgres) compartilhado por qualquer
+   navegador/aparelho. A chamada ao servidor é assíncrona, por isso todo
+   método aqui devolve uma Promise — quem chama precisa usar "await".
+
+   Cupons e clientes continuam fora daqui: cupons já são 100% reais desde
+   02/08 (ver api/coupons.js) e clientes são derivados dos pedidos reais —
+   nenhum dos dois nunca dependeu deste objeto. */
 const AdminStore = {
-  seed(){
-    if (!localStorage.getItem('cb3d_admin_products')) {
-      localStorage.setItem('cb3d_admin_products', JSON.stringify(PRODUCTS));
-    }
-    if (!localStorage.getItem('cb3d_admin_categories')) {
-      localStorage.setItem('cb3d_admin_categories', JSON.stringify(CATEGORIES));
-    }
-    if (!localStorage.getItem('cb3d_admin_coupons')) {
-      localStorage.setItem('cb3d_admin_coupons', JSON.stringify([
-        { code:'BEMVINDO10', type:'percent', value:10, active:true, uses:214, limit:1000, expires:'2026-12-31' },
-        { code:'CB3D15', type:'percent', value:15, active:true, uses:87, limit:200, expires:'2026-09-30' },
-        { code:'FRETEGRATIS', type:'shipping', value:100, active:false, uses:412, limit:500, expires:'2026-06-30' },
-      ]));
-    }
-    if (!localStorage.getItem('cb3d_admin_banners')) {
-      localStorage.setItem('cb3d_admin_banners', JSON.stringify(BANNERS.map((b,i)=>({...b, id:'b'+i, active:true}))));
-    }
-    // A lista de clientes ainda não é preenchida automaticamente a partir
-    // de compras reais (exigiria um banco de dados — ver docs/ARQUITETURA.md).
-    // Por isso começa vazia, em vez de mostrar clientes fictícios de demonstração.
-    if (!localStorage.getItem('cb3d_admin_customers')) {
-      localStorage.setItem('cb3d_admin_customers', JSON.stringify([]));
-    }
+  async get(key){
+    const value = await CB3DStore.get(key);
+    return Array.isArray(value) ? value : [];
   },
-  get(key){ this.seed(); try { return JSON.parse(localStorage.getItem('cb3d_admin_'+key)) || []; } catch(e){ return []; } },
-  set(key, val){ localStorage.setItem('cb3d_admin_'+key, JSON.stringify(val)); },
-  upsertProduct(p){
-    const list = this.get('products');
+  async set(key, val){
+    return CB3DStore.set(key, val);
+  },
+  async upsertProduct(p){
+    const list = await this.get('products');
     const i = list.findIndex(x=>x.id===p.id);
     if (i>-1) list[i] = p; else list.unshift(p);
-    this.set('products', list);
+    await this.set('products', list);
   },
-  deleteProduct(id){ this.set('products', this.get('products').filter(p=>p.id!==id)); },
+  async deleteProduct(id){
+    const list = await this.get('products');
+    await this.set('products', list.filter(p=>p.id!==id));
+  },
 };
 
 function donutChart(data){
@@ -199,12 +192,12 @@ function donutChart(data){
     return `${d.color} ${start}deg ${end}deg`;
   }).join(', ');
   return `
-    <div class="donut-wrap">
-      <div style="width:130px;height:130px;border-radius:50%;background:conic-gradient(${stops});flex-shrink:0;display:flex;align-items:center;justify-content:center">
-        <div style="width:76px;height:76px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#666">100%</div>
-      </div>
-      <div class="donut-legend">
-        ${data.map(d => `<div class="leg-item"><span><span class="dot" style="background:${d.color}"></span>${d.label}</span><strong>${Math.round((d.value/total)*100)}%</strong></div>`).join('')}
-      </div>
-    </div>`;
+  <div class="donut-wrap">
+    <div style="width:130px;height:130px;border-radius:50%;background:conic-gradient(${stops});flex-shrink:0;display:flex;align-items:center;justify-content:center">
+      <div style="width:76px;height:76px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#666">100%</div>
+    </div>
+    <div class="donut-legend">
+      ${data.map(d => `<div class="leg-item"><span><span class="dot" style="background:${d.color}"></span>${d.label}</span><strong>${Math.round((d.value/total)*100)}%</strong></div>`).join('')}
+    </div>
+  </div>`;
 }

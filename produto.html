@@ -159,6 +159,8 @@
 <script src="assets/js/data.js"></script>
 <script src="assets/js/main.js"></script>
 <script>
+  (async function(){
+  await window.CB3D_READY;
   const slug = new URLSearchParams(location.search).get('slug');
   const p = getProduct(slug) || PRODUCTS[0];
   mountLayout(null);
@@ -387,6 +389,7 @@
     "aggregateRating":{"@type":"AggregateRating","ratingValue":p.rating,"reviewCount":p.reviews}
   });
   document.head.appendChild(ld);
+  })();
 </script>
 </body>
 </html>

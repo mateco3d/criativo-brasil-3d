@@ -24,161 +24,163 @@
 <script src="../assets/js/main.js"></script>
 <script src="../assets/js/admin.js"></script>
 <script>
-  adminLayout('banners.html', 'Banners', 'Gerencie os banners do carrossel da página inicial');
-  const c = document.getElementById('adminContent');
-  AdminStore.seed();
+(async function(){
+await window.CB3D_READY;
+adminLayout('banners.html', 'Banners', 'Gerencie os banners do carrossel da página inicial');
+const c = document.getElementById('adminContent');
 
-  function render(){
-    const banners = AdminStore.get('banners');
-    document.getElementById('bannerList').innerHTML = banners.map((b,i) => `
-      <div class="banner-row">
-        <div class="banner-prev" style="${b.img ? `background-image:url('${b.img}')` : ''}">${b.img ? '' : b.tag}</div>
-        <div><strong>${b.title}</strong><div style="font-size:12px;color:#999">${b.text}</div></div>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" ${b.active?'checked':''} onchange="toggleBanner(${i})"> Ativo</label>
-        <div class="row-actions"><button title="Editar" onclick="abrirFormBanner(${i})">${AICO.edit}</button><button title="Excluir" onclick="delBanner(${i})">${AICO.trash}</button></div>
-      </div>`).join('') || `<p style="text-align:center;color:#999;padding:30px">Nenhum banner cadastrado.</p>`;
-  }
-  function toggleBanner(i){ const b = AdminStore.get('banners'); b[i].active = !b[i].active; AdminStore.set('banners', b); render(); }
-  function delBanner(i){ if(!confirm('Excluir banner?')) return; const b = AdminStore.get('banners'); b.splice(i,1); AdminStore.set('banners', b); render(); }
-  window.toggleBanner = toggleBanner;
-  window.delBanner = delBanner;
+async function render(){
+const banners = await AdminStore.get('banners');
+document.getElementById('bannerList').innerHTML = banners.map((b,i) => `
+<div class="banner-row">
+<div class="banner-prev" style="${b.img ? `background-image:url('${b.img}')` : ''}">${b.img ? '' : b.tag}</div>
+<div><strong>${b.title}</strong><div style="font-size:12px;color:#999">${b.text}</div></div>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" ${b.active?'checked':''} onchange="toggleBanner(${i})"> Ativo</label>
+<div class="row-actions"><button title="Editar" onclick="abrirFormBanner(${i})">${AICO.edit}</button><button title="Excluir" onclick="delBanner(${i})">${AICO.trash}</button></div>
+</div>`).join('') || `<p style="text-align:center;color:#999;padding:30px">Nenhum banner cadastrado.</p>`;
+}
+async function toggleBanner(i){ const b = await AdminStore.get('banners'); b[i].active = !b[i].active; await AdminStore.set('banners', b); await render(); }
+async function delBanner(i){ if(!confirm('Excluir banner?')) return; const b = await AdminStore.get('banners'); b.splice(i,1); await AdminStore.set('banners', b); await render(); }
+window.toggleBanner = toggleBanner;
+window.delBanner = delBanner;
 
-  // -------------------------------------------------------------------
-  // Formulário de banner (criar/editar) — antes só dava pra digitar tag e
-  // título (via prompt do navegador), sem jeito de trocar a imagem. Agora
-  // abre um formulário de verdade com campo de imagem: o admin escolhe uma
-  // foto do computador, ela é redimensionada/comprimida direto no navegador
-  // (pra não estourar o limite de armazenamento local) e fica salva junto
-  // com o banner — pode trocar a imagem quantas vezes quiser, a qualquer
-  // momento, só reabrindo "Editar" nesse banner.
-  const MAX_IMG_WIDTH = 1600;
-  let formImgData = null; // data URL da imagem atual sendo editada no formulário
+// -------------------------------------------------------------------
+// Formulário de banner (criar/editar) — antes só dava pra digitar tag e
+// título (via prompt do navegador), sem jeito de trocar a imagem. Agora
+// abre um formulário de verdade com campo de imagem: o admin escolhe uma
+// foto do computador, ela é redimensionada/comprimida direto no navegador
+// (pra não estourar o limite de armazenamento local) e fica salva junto
+// com o banner — pode trocar a imagem quantas vezes quiser, a qualquer
+// momento, só reabrindo "Editar" nesse banner.
+const MAX_IMG_WIDTH = 1600;
+let formImgData = null; // data URL da imagem atual sendo editada no formulário
 
-  function resizeImageFile(file){
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error('Não foi possível ler o arquivo.'));
-      reader.onload = () => {
-        const img = new Image();
-        img.onerror = () => reject(new Error('Arquivo não parece ser uma imagem válida.'));
-        img.onload = () => {
-          const scale = Math.min(1, MAX_IMG_WIDTH / img.width);
-          const w = Math.round(img.width * scale);
-          const h = Math.round(img.height * scale);
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.82));
-        };
-        img.src = reader.result;
-      };
-      reader.readAsDataURL(file);
-    });
-  }
+function resizeImageFile(file){
+return new Promise((resolve, reject) => {
+const reader = new FileReader();
+reader.onerror = () => reject(new Error('Não foi possível ler o arquivo.'));
+reader.onload = () => {
+const img = new Image();
+img.onerror = () => reject(new Error('Arquivo não parece ser uma imagem válida.'));
+img.onload = () => {
+const scale = Math.min(1, MAX_IMG_WIDTH / img.width);
+const w = Math.round(img.width * scale);
+const h = Math.round(img.height * scale);
+const canvas = document.createElement('canvas');
+canvas.width = w; canvas.height = h;
+canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+resolve(canvas.toDataURL('image/jpeg', 0.82));
+};
+img.src = reader.result;
+};
+reader.readAsDataURL(file);
+});
+}
 
-  function abrirFormBanner(i){
-    const isEdit = typeof i === 'number';
-    const banners = AdminStore.get('banners');
-    const b = isEdit ? banners[i] : { tag:'', title:'', text:'', cta:'Comprar Agora', link:'produtos.html', img:null, active:true };
-    formImgData = b.img || null;
+async function abrirFormBanner(i){
+const isEdit = typeof i === 'number';
+const banners = await AdminStore.get('banners');
+const b = isEdit ? banners[i] : { tag:'', title:'', text:'', cta:'Comprar Agora', link:'produtos.html', img:null, active:true };
+formImgData = b.img || null;
 
-    const modal = document.createElement('div');
-    modal.className = 'banner-form-modal';
-    modal.innerHTML = `
-      <div class="banner-form-card">
-        <h3 style="margin:0 0 4px">${isEdit ? 'Editar Banner' : 'Novo Banner'}</h3>
-        <p style="font-size:12.5px;color:var(--gray-500);margin:0 0 18px">A imagem aparece no fundo do banner, na página inicial. Formatos JPG/PNG/WEBP — a imagem é redimensionada automaticamente.</p>
+const modal = document.createElement('div');
+modal.className = 'banner-form-modal';
+modal.innerHTML = `
+<div class="banner-form-card">
+<h3 style="margin:0 0 4px">${isEdit ? 'Editar Banner' : 'Novo Banner'}</h3>
+<p style="font-size:12.5px;color:var(--gray-500);margin:0 0 18px">A imagem aparece no fundo do banner, na página inicial. Formatos JPG/PNG/WEBP — a imagem é redimensionada automaticamente.</p>
 
-        <label style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px">Imagem do banner</label>
-        <div id="imgDrop" class="banner-img-drop ${formImgData ? 'has-img' : ''}" style="${formImgData ? `background-image:url('${formImgData}')` : ''}" onclick="document.getElementById('imgFileInput').click()">
-          ${formImgData ? 'Clique para trocar a imagem' : '📷 Clique para escolher uma imagem do seu computador'}
-        </div>
-        <input type="file" id="imgFileInput" accept="image/*" style="display:none">
-        <div style="display:flex;justify-content:flex-end;margin:8px 0 16px">
-          <button type="button" id="removerImgBtn" class="btn btn-ghost btn-sm" style="${formImgData ? '' : 'display:none'}">Remover imagem</button>
-        </div>
+<label style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px">Imagem do banner</label>
+<div id="imgDrop" class="banner-img-drop ${formImgData ? 'has-img' : ''}" style="${formImgData ? `background-image:url('${formImgData}')` : ''}" onclick="document.getElementById('imgFileInput').click()">
+${formImgData ? 'Clique para trocar a imagem' : '📷 Clique para escolher uma imagem do seu computador'}
+</div>
+<input type="file" id="imgFileInput" accept="image/*" style="display:none">
+<div style="display:flex;justify-content:flex-end;margin:8px 0 16px">
+<button type="button" id="removerImgBtn" class="btn btn-ghost btn-sm" style="${formImgData ? '' : 'display:none'}">Remover imagem</button>
+</div>
 
-        <div class="form-row cols-2">
-          <div class="form-group"><label>Tag (ex.: Lançamentos)</label><input type="text" id="f_tag" value="${(b.tag||'').replace(/"/g,'&quot;')}"></div>
-          <div class="form-group"><label>Texto do botão</label><input type="text" id="f_cta" value="${(b.cta||'').replace(/"/g,'&quot;')}"></div>
-        </div>
-        <div class="form-group"><label>Título principal</label><input type="text" id="f_title" value="${(b.title||'').replace(/"/g,'&quot;')}"></div>
-        <div class="form-group"><label>Texto de apoio</label><textarea id="f_text" rows="2">${b.text||''}</textarea></div>
-        <div class="form-group"><label>Link do botão</label><input type="text" id="f_link" value="${(b.link||'').replace(/"/g,'&quot;')}"></div>
+<div class="form-row cols-2">
+<div class="form-group"><label>Tag (ex.: Lançamentos)</label><input type="text" id="f_tag" value="${(b.tag||'').replace(/"/g,'&quot;')}"></div>
+<div class="form-group"><label>Texto do botão</label><input type="text" id="f_cta" value="${(b.cta||'').replace(/"/g,'&quot;')}"></div>
+</div>
+<div class="form-group"><label>Título principal</label><input type="text" id="f_title" value="${(b.title||'').replace(/"/g,'&quot;')}"></div>
+<div class="form-group"><label>Texto de apoio</label><textarea id="f_text" rows="2">${b.text||''}</textarea></div>
+<div class="form-group"><label>Link do botão</label><input type="text" id="f_link" value="${(b.link||'').replace(/"/g,'&quot;')}"></div>
 
-        <div style="display:flex;gap:10px;margin-top:8px">
-          <button class="btn btn-ghost" style="flex:1" id="cancelarBannerBtn">Cancelar</button>
-          <button class="btn btn-gold" style="flex:1" id="salvarBannerBtn">Salvar Banner</button>
-        </div>
-      </div>`;
-    document.body.appendChild(modal);
-    modal.addEventListener('click', (e)=>{ if (e.target === modal) modal.remove(); });
-    modal.querySelector('#cancelarBannerBtn').addEventListener('click', ()=> modal.remove());
+<div style="display:flex;gap:10px;margin-top:8px">
+<button class="btn btn-ghost" style="flex:1" id="cancelarBannerBtn">Cancelar</button>
+<button class="btn btn-gold" style="flex:1" id="salvarBannerBtn">Salvar Banner</button>
+</div>
+</div>`;
+document.body.appendChild(modal);
+modal.addEventListener('click', (e)=>{ if (e.target === modal) modal.remove(); });
+modal.querySelector('#cancelarBannerBtn').addEventListener('click', ()=> modal.remove());
 
-    const imgDrop = modal.querySelector('#imgDrop');
-    const fileInput = modal.querySelector('#imgFileInput');
-    const removerBtn = modal.querySelector('#removerImgBtn');
+const imgDrop = modal.querySelector('#imgDrop');
+const fileInput = modal.querySelector('#imgFileInput');
+const removerBtn = modal.querySelector('#removerImgBtn');
 
-    fileInput.addEventListener('change', async ()=>{
-      const file = fileInput.files[0];
-      if (!file) return;
-      imgDrop.textContent = 'Processando imagem...';
-      try {
-        formImgData = await resizeImageFile(file);
-        imgDrop.classList.add('has-img');
-        imgDrop.style.backgroundImage = `url('${formImgData}')`;
-        imgDrop.textContent = 'Clique para trocar a imagem';
-        removerBtn.style.display = '';
-      } catch (err) {
-        showToast('Não foi possível usar essa imagem', err.message || 'Tente outro arquivo.');
-        imgDrop.textContent = formImgData ? 'Clique para trocar a imagem' : '📷 Clique para escolher uma imagem do seu computador';
-      }
-    });
-    removerBtn.addEventListener('click', ()=>{
-      formImgData = null;
-      imgDrop.classList.remove('has-img');
-      imgDrop.style.backgroundImage = '';
-      imgDrop.textContent = '📷 Clique para escolher uma imagem do seu computador';
-      removerBtn.style.display = 'none';
-    });
+fileInput.addEventListener('change', async ()=>{
+const file = fileInput.files[0];
+if (!file) return;
+imgDrop.textContent = 'Processando imagem...';
+try {
+formImgData = await resizeImageFile(file);
+imgDrop.classList.add('has-img');
+imgDrop.style.backgroundImage = `url('${formImgData}')`;
+imgDrop.textContent = 'Clique para trocar a imagem';
+removerBtn.style.display = '';
+} catch (err) {
+showToast('Não foi possível usar essa imagem', err.message || 'Tente outro arquivo.');
+imgDrop.textContent = formImgData ? 'Clique para trocar a imagem' : '📷 Clique para escolher uma imagem do seu computador';
+}
+});
+removerBtn.addEventListener('click', ()=>{
+formImgData = null;
+imgDrop.classList.remove('has-img');
+imgDrop.style.backgroundImage = '';
+imgDrop.textContent = '📷 Clique para escolher uma imagem do seu computador';
+removerBtn.style.display = 'none';
+});
 
-    modal.querySelector('#salvarBannerBtn').addEventListener('click', ()=>{
-      const tag = modal.querySelector('#f_tag').value.trim();
-      const title = modal.querySelector('#f_title').value.trim();
-      if (!title) { showToast('Falta o título', 'Preencha o título principal do banner.'); return; }
-      const novo = {
-        id: b.id || 'b'+Date.now(),
-        tag, title,
-        text: modal.querySelector('#f_text').value.trim(),
-        cta: modal.querySelector('#f_cta').value.trim() || 'Comprar Agora',
-        link: modal.querySelector('#f_link').value.trim() || 'produtos.html',
-        img: formImgData,
-        active: b.active !== undefined ? b.active : true,
-      };
-      const list = AdminStore.get('banners');
-      try {
-        if (isEdit) list[i] = novo; else list.push(novo);
-        AdminStore.set('banners', list);
-      } catch (err) {
-        showToast('Não foi possível salvar', 'O navegador recusou salvar (provavelmente sem espaço local). Tente uma imagem menor ou remova outro banner.');
-        return;
-      }
-      modal.remove();
-      render();
-      showToast('Banner salvo!', isEdit ? 'As alterações foram salvas.' : 'Novo banner adicionado ao carrossel.');
-    });
-  }
-  window.abrirFormBanner = abrirFormBanner;
+modal.querySelector('#salvarBannerBtn').addEventListener('click', async ()=>{
+const tag = modal.querySelector('#f_tag').value.trim();
+const title = modal.querySelector('#f_title').value.trim();
+if (!title) { showToast('Falta o título', 'Preencha o título principal do banner.'); return; }
+const novo = {
+id: b.id || 'b'+Date.now(),
+tag, title,
+text: modal.querySelector('#f_text').value.trim(),
+cta: modal.querySelector('#f_cta').value.trim() || 'Comprar Agora',
+link: modal.querySelector('#f_link').value.trim() || 'produtos.html',
+img: formImgData,
+active: b.active !== undefined ? b.active : true,
+};
+const list = await AdminStore.get('banners');
+try {
+if (isEdit) list[i] = novo; else list.push(novo);
+await AdminStore.set('banners', list);
+} catch (err) {
+showToast('Não foi possível salvar', 'O navegador recusou salvar (provavelmente sem espaço local). Tente uma imagem menor ou remova outro banner.');
+return;
+}
+modal.remove();
+await render();
+showToast('Banner salvo!', isEdit ? 'As alterações foram salvas.' : 'Novo banner adicionado ao carrossel.');
+});
+}
+window.abrirFormBanner = abrirFormBanner;
 
-  c.innerHTML = `
-    <div class="admin-panel">
-      <div class="admin-toolbar">
-        <h3 style="margin:0">Banners do Carrossel</h3>
-        <button class="btn btn-gold btn-sm" onclick="abrirFormBanner()">${AICO.plus} Novo Banner</button>
-      </div>
-      <div id="bannerList"></div>
-    </div>`;
-  render();
+c.innerHTML = `
+<div class="admin-panel">
+<div class="admin-toolbar">
+<h3 style="margin:0">Banners do Carrossel</h3>
+<button class="btn btn-gold btn-sm" onclick="abrirFormBanner()">${AICO.plus} Novo Banner</button>
+</div>
+<div id="bannerList"></div>
+</div>`;
+await render();
+})();
 </script>
 </body>
 </html>

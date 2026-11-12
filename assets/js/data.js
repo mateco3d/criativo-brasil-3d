@@ -84,22 +84,52 @@ const QA_SAMPLE = [
   { q:'Posso pedir uma cor personalizada que não está na lista?', a:'Sim! Entre em contato pelo WhatsApp antes da compra e verificamos a disponibilidade do filamento na cor desejada.' },
 ];
 
-/* ---------------- Sincroniza com o Painel Admin ----------------
-   O painel admin salva os dados em localStorage (este protótipo ainda não
-   tem banco de dados real — ver docs/ARQUITETURA.md). Sem isto, produtos,
-   categorias e banners criados/editados/excluídos no admin não apareciam
-   na loja, porque as páginas da loja liam direto dos arrays estáticos
-   acima. Aqui sobrescrevemos esses arrays com o que estiver salvo no
-   localStorage (se houver), logo após serem declarados, para que loja e
-   admin sempre mostrem os mesmos dados no mesmo navegador/dispositivo. */
-(function syncFromAdminStore(){
-  function applyOverride(list, storageKey){
+/* ---------------- Sincroniza com o banco de dados real (servidor) ----------------
+   Até 11/11, o painel admin salvava produtos/categorias/banners só no
+   localStorage do navegador — isso fazia cada navegador/aparelho (celular,
+   computador) mostrar um catálogo diferente, porque nunca era sincronizado
+   entre eles. Agora os dados reais ficam guardados no servidor (tabela
+   store_data, Postgres — ver api/store.js), e qualquer aparelho lê sempre
+   a mesma informação.
+
+   CB3DStore é o cliente dessa API, usado tanto aqui (loja) quanto no
+   painel admin (ver assets/js/admin.js). window.CB3D_READY é uma Promise
+   que resolve quando PRODUCTS/CATEGORIES/BANNERS já foram atualizados com
+   o que está salvo no servidor — toda página que usa esses arrays deve dar
+   "await window.CB3D_READY;" antes de ler/renderizar qualquer coisa. */
+const CB3DStore = {
+  async get(key){
     try {
-      const saved = JSON.parse(localStorage.getItem(storageKey));
-      if (Array.isArray(saved)) { list.length = 0; list.push(...saved); }
-    } catch (e) { /* localStorage indisponível ou dado inválido: mantém os dados padrão */ }
+      const res = await fetch('/api/store?key=' + encodeURIComponent(key));
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.value;
+    } catch (e) { return null; }
+  },
+  async set(key, value){
+    try {
+      const res = await fetch('/api/store', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value }),
+      });
+      return res.ok;
+    } catch (e) { return false; }
+  },
+};
+
+window.CB3D_READY = (async function syncFromServerStore(){
+  function applyOverride(list, key, saved){
+    if (Array.isArray(saved)) { list.length = 0; list.push(...saved); }
   }
-  applyOverride(PRODUCTS, 'cb3d_admin_products');
-  applyOverride(CATEGORIES, 'cb3d_admin_categories');
-  applyOverride(BANNERS, 'cb3d_admin_banners');
+  const [products, categories, banners] = await Promise.all([
+    CB3DStore.get('products'),
+    CB3DStore.get('categories'),
+    CB3DStore.get('banners'),
+  ]);
+  // Quando uma chave nunca foi salva no servidor (null), mantém o array
+  // estático acima como valor padrão (mesmo comportamento de antes).
+  applyOverride(PRODUCTS, 'products', products);
+  applyOverride(CATEGORIES, 'categories', categories);
+  applyOverride(BANNERS, 'banners', banners);
 })();

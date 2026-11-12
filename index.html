@@ -34,21 +34,6 @@
 
 <div id="heroMount"></div>
 
-<!-- CATEGORIAS -->
-<section class="section" id="categorias">
-  <div class="container">
-    <div class="section-head reveal">
-      <div>
-        <span class="eyebrow">Explore</span>
-        <h2 class="section-title">Categorias</h2>
-        <p class="section-sub">Encontre o produto perfeito para o seu estilo, sua casa ou seu presente.</p>
-      </div>
-      <a href="produtos.html" class="btn btn-outline">Ver Todas</a>
-    </div>
-    <div class="cat-grid" id="catGrid"></div>
-  </div>
-</section>
-
 <!-- PRODUTOS EM DESTAQUE -->
 <section class="section section-soft" id="destaques">
   <div class="container">
@@ -180,13 +165,6 @@
 <script>
   mountLayout('index.html');
   renderHero('heroMount');
-
-  // Categorias
-  document.getElementById('catGrid').innerHTML = CATEGORIES.map(c => `
-    <a href="produtos.html?cat=${c.slug}" class="cat-card">
-      <div class="cat-bg">${iconFor(c.slug)}</div>
-      <div class="cat-label">${c.name}<span>${c.desc}</span></div>
-    </a>`).join('');
 
   // Destaques (mistura tags)
   const featured = PRODUCTS.filter(p => p.tags && p.tags.length).slice(0, 8);

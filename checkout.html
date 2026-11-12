@@ -113,6 +113,8 @@
 <script src="assets/js/data.js"></script>
 <script src="assets/js/main.js"></script>
 <script>
+  (async function(){
+  await window.CB3D_READY;
   mountLayout(null);
   let selectedShipping = null;
   let selectedShippingCode = 'PAC';
@@ -296,6 +298,8 @@
     }
   }
   document.addEventListener('cart:update', renderItems);
+  window.finalizarCompra = finalizarCompra;
+  })();
 </script>
 </body>
 </html>

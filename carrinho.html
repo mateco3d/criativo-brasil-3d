@@ -40,6 +40,8 @@
 <script src="assets/js/data.js"></script>
 <script src="assets/js/main.js"></script>
 <script>
+  (async function(){
+  await window.CB3D_READY;
   mountLayout(null);
   // Cupom real, validado no servidor (/api/aplicar-cupom) — pode valer
   // para o carrinho inteiro ou só para um produto específico. O valor
@@ -126,6 +128,8 @@
     render();
   })();
   document.addEventListener('cart:update', async () => { if (couponCode) await validateCoupon(couponCode); render(); });
+  window.render = render;
+  })();
 </script>
 </body>
 </html>

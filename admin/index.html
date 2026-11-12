@@ -25,6 +25,7 @@
      ou seja, contam pedidos feitos por qualquer cliente, em qualquer
      dispositivo, não só neste navegador. */
   (async function init(){
+    await window.CB3D_READY;
     const orders = await fetchOrders();
     const isCounted = o => o.status !== 'Cancelado';
     // Faturamento e vendas só devem contar pedidos realmente pagos —

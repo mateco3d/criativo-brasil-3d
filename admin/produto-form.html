@@ -20,11 +20,11 @@
 <script src="../assets/js/main.js"></script>
 <script src="../assets/js/admin.js"></script>
 <script>
-  const editId = new URLSearchParams(location.search).get('id');
+  (async function(){ await window.CB3D_READY; const editId = new URLSearchParams(location.search).get('id');
   adminLayout('produtos.html', editId ? 'Editar Produto' : 'Novo Produto', 'Preencha as informações completas do produto');
   const c = document.getElementById('adminContent');
-  AdminStore.seed();
-  const existing = editId ? AdminStore.get('products').find(p=>p.id===editId) : null;
+  
+  const existing = editId ? (await AdminStore.get('products')).find(p=>p.id===editId) : null;
   const e = existing || { id:'p'+Date.now(), tags:[] };
 
   c.innerHTML = `
@@ -168,8 +168,8 @@
       .replace(/^-+|-+$/g,'')
       .slice(0,80);
   }
-  function uniqueSlug(base, excludeId){
-    const all = AdminStore.get('products');
+  async function uniqueSlug(base, excludeId){
+    const all = await AdminStore.get('products');
     let slug = base || 'produto', n = 2;
     while (all.some(pp => pp.slug === slug && pp.id !== excludeId)) { slug = `${base||'produto'}-${n++}`; }
     return slug;
@@ -277,7 +277,7 @@
   });
   renderColorList();
 
-  document.getElementById('prodForm').addEventListener('submit', function(ev){
+  document.getElementById('prodForm').addEventListener('submit', async function(ev){
     ev.preventDefault();
     const tags = [];
     if (document.getElementById('tag_novo').checked) tags.push('novo');
@@ -291,7 +291,7 @@
     // gera do nome; nunca fica em branco, e nunca colide com o slug de
     // outro produto já cadastrado (ver uniqueSlug acima).
     const rawSlug = document.getElementById('f_slug').value.trim();
-    const slug = uniqueSlug(slugify(rawSlug || document.getElementById('f_name').value), e.id);
+    const slug = await uniqueSlug(slugify(rawSlug || document.getElementById('f_name').value), e.id);
     const product = {
       id: e.id, slug, name: document.getElementById('f_name').value,
       cat: document.getElementById('f_cat').value, subcat: document.getElementById('f_subcat').value || null,
@@ -311,7 +311,7 @@
       rating: e.rating || 5, reviews: e.reviews || 0,
     };
     try {
-      AdminStore.upsertProduct(product);
+      await AdminStore.upsertProduct(product);
     } catch (err) {
       showToast('Não foi possível salvar', 'O navegador recusou salvar (provavelmente sem espaço local). Tente remover alguma imagem ou usar fotos menores.');
       return;
@@ -319,6 +319,7 @@
     alert('Produto salvo com sucesso!');
     location.href = 'produtos.html';
   });
+                   })();
 </script>
 </body>
 </html>

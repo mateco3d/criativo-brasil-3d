@@ -163,6 +163,8 @@
 <script src="assets/js/data.js"></script>
 <script src="assets/js/main.js"></script>
 <script>
+  (async function(){
+  await window.CB3D_READY;
   mountLayout('index.html');
   renderHero('heroMount');
 
@@ -227,6 +229,7 @@
   // Instagram
   document.getElementById('instaGrid').innerHTML = Array.from({length:6}).map((_,i) => `
     <a href="#" class="insta-item">${iconFor(CATEGORIES[i%CATEGORIES.length].slug)}<span class="ig-icon">${ICO.insta}</span></a>`).join('');
+  })();
 </script>
 </body>
 </html>

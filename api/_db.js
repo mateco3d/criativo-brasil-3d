@@ -61,10 +61,10 @@ async function ensureSchema() {
   // como saber se o e-mail realmente saiu ou falhou silenciosamente — só
   // dava para checar manualmente a caixa "Enviados" do Gmail da loja ou os
   // Logs do Vercel. Agora fica salvo no próprio pedido:
-  //   'sent'     → e-mail enviado com sucesso (ver tracking_email_sent_at)
-  //   'failed'   → tentativa de envio falhou (ver tracking_email_error)
-  //   'no_email' → pedido não tem e-mail do cliente salvo, nunca tentou
-  //   NULL       → ainda não houve tentativa de envio (nenhum código salvo ainda)
+  // 'sent' → e-mail enviado com sucesso (ver tracking_email_sent_at)
+  // 'failed' → tentativa de envio falhou (ver tracking_email_error)
+  // 'no_email' → pedido não tem e-mail do cliente salvo, nunca tentou
+  // NULL → ainda não houve tentativa de envio (nenhum código salvo ainda)
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_email_status TEXT`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_email_sent_at TIMESTAMPTZ`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_email_error TEXT`;
@@ -106,6 +106,19 @@ async function ensureSchema() {
       usage_limit INT,
       expires_at DATE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+  // Catálogo (produtos/categorias/banners) cadastrado pelo painel admin —
+  // até 11/11 ficava só no localStorage do navegador (ver assets/js/data.js
+  // e assets/js/admin.js), por isso cada aparelho/navegador via um
+  // catálogo diferente. Guarda o array inteiro de cada chave (ex.:
+  // "products") em JSONB — mesma lógica que já era usada no localStorage,
+  // só que agora compartilhada por todo mundo via api/store.js.
+  await sql`
+    CREATE TABLE IF NOT EXISTS store_data (
+      key TEXT PRIMARY KEY,
+      value JSONB NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `;
   schemaReady = true;

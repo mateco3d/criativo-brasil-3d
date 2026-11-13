@@ -49,8 +49,8 @@
             <div class="form-group"><label>CPF</label><input type="text" id="cpfInput" required placeholder="000.000.000-00"></div>
           </div>
           <div class="form-row cols-2">
-            <div class="form-group"><label>Telefone</label><input type="tel" required placeholder="(11) 91234-5678"></div>
-            <div class="form-group"><label>E-mail</label><input type="email" required></div>
+            <div class="form-group"><label>Telefone</label><input type="tel" id="telefoneInput" required placeholder="(11) 91234-5678"></div>
+            <div class="form-group"><label>E-mail</label><input type="email" id="emailInput" required></div>
           </div>
         </div>
 
@@ -116,12 +116,47 @@
   (async function(){
   await window.CB3D_READY;
   mountLayout(null);
+
+  // Rascunho do checkout: salva nome/CPF/telefone/e-mail/endereco no
+  // localStorage do navegador a cada alteracao, e recarrega ao abrir a
+  // pagina de novo -- assim o cliente nao perde o que ja digitou se sair
+  // pra adicionar mais produtos ou voltar depois. Fica so no aparelho dele,
+  // nunca e enviado pra lugar nenhum ate ele clicar em finalizar a compra.
+  const CHECKOUT_DRAFT_KEY = 'cb3d_checkout_draft';
+  const CHECKOUT_DRAFT_FIELDS = ['nomeInput','cpfInput','telefoneInput','emailInput','cepInput','ruaInput','numeroInput','complementoInput','cidadeInput','ufInput','bairroInput'];
+  function saveCheckoutDraft(){
+    try {
+      const data = {};
+      CHECKOUT_DRAFT_FIELDS.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) data[id] = el.value;
+      });
+      localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+  function loadCheckoutDraft(){
+    try {
+      const raw = localStorage.getItem(CHECKOUT_DRAFT_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      CHECKOUT_DRAFT_FIELDS.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el && data[id]) el.value = data[id];
+      });
+    } catch (e) {}
+  }
+  loadCheckoutDraft();
+  CHECKOUT_DRAFT_FIELDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', saveCheckoutDraft);
+  });
+
   let selectedShipping = null;
   let selectedShippingCode = 'PAC';
   // Cupom real, validado no servidor (/api/aplicar-cupom) — pode valer para
   // o pedido inteiro ou só para um produto específico (aplicado antes, no
   // carrinho ou na página do produto). O valor final cobrado é sempre
-  // recalculado de novo em api/create-preference.js na hora de pagar.
+  // recalculado de novo em api/create-checkout-pagbank.js na hora de pagar.
   const couponCode = localStorage.getItem('cb3d_coupon') || null;
   let couponResult = null;
 
@@ -175,6 +210,7 @@
       document.getElementById('cidadeInput').value = addr.localidade;
       document.getElementById('ufInput').value = addr.uf;
       document.getElementById('bairroInput').value = addr.bairro || '';
+      saveCheckoutDraft();
       document.getElementById('cepStatus').textContent = `Endereço encontrado: ${addr.bairro}, ${addr.localidade}/${addr.uf}`;
       document.getElementById('shippingOptions').innerHTML = '<p style="font-size:13px;color:var(--gray-500)">Calculando frete com os Correios...</p>';
       const items = Cart.lines().map(l => ({ id: l.id, qty: l.qty }));
@@ -233,10 +269,10 @@
     const form = document.getElementById('checkoutForm');
     if (!form.checkValidity()){ form.reportValidity(); return; }
 
-    const inputs = form.querySelectorAll('input');
     const nome = document.getElementById('nomeInput').value;
     const cpf = document.getElementById('cpfInput').value;
-    const telefone = inputs[2].value, email = inputs[3].value;
+    const telefone = document.getElementById('telefoneInput').value;
+    const email = document.getElementById('emailInput').value;
 
     const btn = document.getElementById('finalizarBtn');
     const originalLabel = btn.textContent;

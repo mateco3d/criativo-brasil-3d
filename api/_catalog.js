@@ -25,6 +25,7 @@ const PRODUCTS = [
    { id: 'p1787943475591', name: 'Cruz Vazada', cat: 'artigo-religioso', price: 18.99, promo: null, weight_kg: 0.4, length_cm: 17, width_cm: 12.5, height_cm: 4 },
    { id: 'p1787343733424', name: 'Letreiro Cristo Vive', cat: 'artigo-religioso', price: 22, promo: null, weight_kg: 0.86, length_cm: 16, width_cm: 11, height_cm: 6 },
    { id: 'p1787287049399', name: 'Suporte para 2 Controles PS5/PS4 Branco e Preto', cat: 'games', price: 20.99, promo: null, weight_kg: 0.86, length_cm: 16, width_cm: 11, height_cm: 6 },
+  { id: 'p1794588365030', name: 'Porta Talher - Bota Papai Noel', cat: 'colecao-natal-2026', price: 64.99, promo: null, weight_kg: 0.15, length_cm: 12, width_cm: 10, height_cm: 9 },
    ];
 
 function getProduct(id) {

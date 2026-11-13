@@ -74,7 +74,7 @@ module.exports = async function handler(req, res) {
      //    (idêntico ao create-preference.js)
      const lines = [];
      for (const raw of body.items) {
-            const product = getProduct(raw && raw.id);
+            const product = await getProduct(raw && raw.id);
             const qty = Math.max(1, parseInt(raw && raw.qty, 10) || 1);
             if (!product) {
                      res.status(400).json({ error: `Produto inválido: ${raw && raw.id}` });

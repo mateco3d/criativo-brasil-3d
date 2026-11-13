@@ -37,7 +37,7 @@ module.exports = async function handler(req, res) {
 
   const lines = [];
   for (const raw of body.items) {
-    const product = getProduct(raw && raw.id);
+    const product = await getProduct(raw && raw.id);
     if (!product) continue;
     lines.push({ product, qty: Math.max(1, parseInt(raw.qty, 10) || 1), unit: unitPrice(product) });
   }

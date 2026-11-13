@@ -5,7 +5,7 @@
    Calcula as opções de frete real (PAC/SEDEX/etc via Melhor Envio) para
    o CEP e os itens do carrinho informados. Usado pelo checkout para
    mostrar as opções antes do pagamento — o valor final cobrado é sempre
-   recalculado de novo em api/create-preference.js na hora de gerar o
+   recalculado de novo em api/create-checkout-pagbank.js na hora de gerar o
    pagamento, nunca confiando neste valor "de exibição".
 =================================================================== */
 

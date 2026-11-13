@@ -36,7 +36,7 @@
 <script>
   mountLayout(null);
   const params = new URLSearchParams(location.search);
-  const orderCode = params.get('order') || params.get('external_reference');
+  const orderCode = params.get('order');
   let order = null;
   try { order = JSON.parse(localStorage.getItem('cb3d_last_order')); } catch(e){}
 
@@ -79,8 +79,8 @@
   // checkout é criado (veja api/create-checkout-pagbank.js), com status
   // inicial "Aguardando Pagamento". O status final só é conhecido quando a
   // PagBank confirma o pagamento e chama nosso webhook (ver
-  // api/pagbank-webhook.js) — diferente do Mercado Pago, a PagBank não
-  // acrescenta o status como parâmetro na URL de retorno, então essa página
+  // api/pagbank-webhook.js) — a PagBank não acrescenta o status como
+  // parâmetro na URL de retorno, então essa página
   // consulta o status real no servidor (api/order-status.js) em vez de
   // confiar em qualquer coisa vinda da própria URL.
   const INTERNAL_STATUS_MAP = { 'Processando': 'approved', 'Aguardando Pagamento': 'pending', 'Cancelado': 'rejected' };

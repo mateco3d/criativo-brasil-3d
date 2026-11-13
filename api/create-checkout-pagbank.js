@@ -2,27 +2,26 @@
    CRIATIVO BRASIL 3D — Vercel Serverless Function
    POST /api/create-checkout-pagbank
    -------------------------------------------------------------------
-   Substitui o api/create-preference.js (Mercado Pago) na migração pra
-   PagBank. Cria um "Checkout" hospedado da PagBank (o cliente é
-   redirecionado pra uma página segura da PagBank pra pagar com Pix,
-   boleto ou cartão parcelado, igual funcionava o Checkout Pro do
-   Mercado Pago) e devolve o link de pagamento (checkout_url) pro
-   front-end redirecionar o cliente.
+   Cria um "Checkout" hospedado da PagBank (o cliente é redirecionado
+   pra uma página segura da PagBank pra pagar com Pix, boleto ou
+   cartão parcelado) e devolve o link de pagamento (checkout_url) pro
+   front-end redirecionar o cliente. Esse é o único jeito de pagamento
+   da loja — o Mercado Pago foi removido (ver claude/site-progresso.md,
+   atualização de 13/11): api/create-preference.js e api/mp-webhook.js
+   não existem mais.
 
    Todo o valor cobrado é recalculado aqui no servidor a partir de
    api/_catalog.js — nunca confiamos em preço, frete ou desconto vindos
-   do navegador. Essa parte é idêntica ao create-preference.js antigo.
+   do navegador.
 
    Requer a variável de ambiente PAGBANK_TOKEN configurada no painel do
    Vercel (Project Settings → Environment Variables), com o token de
    API (Bearer) gerado no painel de desenvolvedores da PagBank. Nunca
    commitar esse token no código/GitHub.
 
-   IMPORTANTE — ainda não está ativo: o checkout.html do site continua
-   chamando /api/create-preference (Mercado Pago) até o usuário
-   confirmar que o PAGBANK_TOKEN está configurado e a gente testar o
-   fluxo completo (Pix/boleto/cartão + webhook) em produção. Ver
-   claude/site-progresso.md para o estado atual da migração.
+   checkout.html já chama este endpoint diretamente — confirmado
+   funcionando em produção em 13/11 (checkout_url real gerado, página
+   de pagamento da PagBank carregando produto/frete/total corretos).
 =================================================================== */
 
 const { getProduct, unitPrice, round2 } = require('./_catalog');
@@ -71,7 +70,7 @@ module.exports = async function handler(req, res) {
      }
 
      // 1) Valida e recalcula os itens com base no catálogo do servidor
-     //    (idêntico ao create-preference.js)
+     //    (fonte única de verdade para preço/frete/desconto no checkout)
      const lines = [];
      for (const raw of body.items) {
             const product = await getProduct(raw && raw.id);

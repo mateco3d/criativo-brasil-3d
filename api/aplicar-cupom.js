@@ -5,7 +5,7 @@
    Endpoint público (sem login) usado para VALIDAR e mostrar o desconto
    de um cupom antes da compra — na página do produto, no carrinho e no
    checkout. Não cria pedido nem cobra nada; é só preview. O valor real
-   cobrado é sempre recalculado de novo em api/create-preference.js.
+   cobrado é sempre recalculado de novo em api/create-checkout-pagbank.js.
 
    Body: { code: "PROMO10", items: [{ id, qty }, ...] }
 =================================================================== */

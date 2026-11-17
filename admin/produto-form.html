@@ -185,8 +185,12 @@
   // verdade: clique abre o seletor de arquivos do computador, e também
   // aceita arrastar e soltar imagens direto do computador. Cada imagem é
   // redimensionada/comprimida no navegador (igual já era feito para banners
-  // em admin/banners.html) e fica salva junto com o produto — a primeira
-  // da lista é a "capa" mostrada no card da loja e na galeria do produto.
+  // em admin/banners.html) e depois enviada para /api/upload-image, que
+  // guarda a foto na Vercel Blob e devolve só a URL — é essa URL (texto
+  // pequeno) que fica salva junto com o produto, não a foto inteira em
+  // base64 (isso evitava o cadastro bater no limite de 4.5MB por
+  // salvamento da Vercel). A primeira da lista é a "capa" mostrada no
+  // card da loja e na galeria do produto.
   const MAX_IMG_WIDTH = 1000;
   function resizeImageFile(file){
     return new Promise((resolve, reject) => {
@@ -202,7 +206,19 @@
           const canvas = document.createElement('canvas');
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.85));
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          // Antes a foto comprimida (dataUrl) era guardada direto no produto.
+          // Agora ela e enviada pro servidor, que guarda na Vercel Blob e
+          // devolve so a URL — assim o cadastro do produto nao fica gigante
+          // e nao bate no limite de 4.5MB por salvamento da Vercel.
+          fetch('/api/upload-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: dataUrl })
+          })
+            .then((r) => r.json().then((j) => (r.ok ? j : Promise.reject(new Error(j.error || 'Falha ao enviar imagem.')))))
+            .then((j) => resolve(j.url))
+            .catch(reject);
         };
         img.src = reader.result;
       };

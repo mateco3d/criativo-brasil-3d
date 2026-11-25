@@ -150,6 +150,8 @@ module.exports = async function handler(req, res) {
 
      const payer = body.buyer && typeof body.buyer === 'object' ? body.buyer : {};
      const address = body.address && typeof body.address === 'object' ? body.address : {};
+     const fbp = typeof body.fbp === 'string' ? body.fbp : null;
+     const fbc = typeof body.fbc === 'string' ? body.fbc : null;
      const phoneDigits = payer.phone ? String(payer.phone).replace(/\D/g, '') : '';
 
      const checkoutBody = {
@@ -224,7 +226,7 @@ module.exports = async function handler(req, res) {
                 await sql`
                         INSERT INTO orders (
                                   id, cliente, email, telefone, total, subtotal, shipping, discount, status, pagbank_checkout_id,
-                                            cpf, cep, rua, numero, complemento, bairro, cidade, uf, shipping_label
+                                            cpf, cep, rua, numero, complemento, bairro, cidade, uf, shipping_label, fbp, fbc
                                                     )
                                                             VALUES (
                                                                       ${orderCode}, ${payer.name || null}, ${payer.email || null}, ${payer.phone || null},
@@ -232,7 +234,7 @@ module.exports = async function handler(req, res) {
                                                                                           'Aguardando Pagamento', ${data.id},
                                                                                                     ${payer.cpf || null}, ${address.cep || null}, ${address.rua || null}, ${address.numero || null},
                                                                                                               ${address.complemento || null}, ${address.bairro || null}, ${address.cidade || null}, ${address.uf || null},
-                                                                                                                        ${shipping.label || null}
+                                                                                                                        ${shipping.label || null}, ${fbp || null}, ${fbc || null}
                                                                                                                                 )
                                                                                                                                         ON CONFLICT (id) DO NOTHING
                                                                                                                                               `;

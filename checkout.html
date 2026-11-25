@@ -140,7 +140,13 @@
   // pagina de novo -- assim o cliente nao perde o que ja digitou se sair
   // pra adicionar mais produtos ou voltar depois. Fica so no aparelho dele,
   // nunca e enviado pra lugar nenhum ate ele clicar em finalizar a compra.
-  const CHECKOUT_DRAFT_KEY = 'cb3d_checkout_draft';
+  // Le um cookie pelo nome (usado pra pegar _fbp/_fbc, que o Pixel da Meta
+// grava sozinho no navegador do cliente assim que a pagina carrega).
+function getCookieValue(name){
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+const CHECKOUT_DRAFT_KEY = 'cb3d_checkout_draft';
   const CHECKOUT_DRAFT_FIELDS = ['nomeInput','cpfInput','telefoneInput','emailInput','cepInput','ruaInput','numeroInput','complementoInput','cidadeInput','ufInput','bairroInput'];
   function saveCheckoutDraft(){
     try {
@@ -308,6 +314,13 @@
           shippingLabel: selectedShipping ? selectedShipping.label : null,
           couponCode: couponCode,
           buyer: { name: nome, email, phone: telefone, cpf },
+          // _fbp/_fbc: cookies que o Pixel da Meta grava no navegador do
+          // cliente. Mandamos junto com o pedido pra API de Conversoes
+          // (server-side, no webhook da PagBank) poder usar os mesmos
+          // identificadores que o Pixel do navegador usaria, melhorando a
+          // qualidade de correspondencia do evento de compra.
+          fbp: getCookieValue('_fbp'),
+          fbc: getCookieValue('_fbc'),
           // Endereço completo — guardado no pedido só para pré-preencher os
           // dados de postagem no painel admin (ver admin/pedidos.html). Não
           // é usado para calcular o frete, que já foi calculado acima.

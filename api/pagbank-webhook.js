@@ -36,6 +36,7 @@
 
 const { sql, ensureSchema } = require('./_db');
 const { sendNewOrderEmail } = require('./_email');
+const { sendPurchaseEvent } = require('./_meta-capi');
 
 const STATUS_BY_PAGBANK = {
   PAID: 'Processando',
@@ -138,7 +139,7 @@ module.exports = async function handler(req, res) {
           pagbank_status = ${pbStatus},
           updated_at = now()
       WHERE id = ${orderCode}
-      RETURNING id, cliente, email, telefone, total, notified
+      RETURNING id, cliente, email, telefone, total, notified, fbp, fbc
     `;
 
     const savedOrder = rows[0];
@@ -151,6 +152,19 @@ module.exports = async function handler(req, res) {
         await sql`UPDATE orders SET notified = true WHERE id = ${orderCode}`;
       } catch (mailErr) {
         console.log('Falha ao enviar e-mail de notificação:', mailErr);
+      }
+      try {
+        await sendPurchaseEvent({
+          orderId: orderCode,
+          value: savedOrder.total,
+          currency: 'BRL',
+          email: savedOrder.email,
+          phone: savedOrder.telefone,
+          fbp: savedOrder.fbp,
+          fbc: savedOrder.fbc,
+        });
+      } catch (capiErr) {
+        console.log('Falha ao enviar evento Purchase pra API de Conversoes da Meta:', capiErr);
       }
     }
 

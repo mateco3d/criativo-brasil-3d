@@ -349,6 +349,17 @@ function addToCartWithFeedback(productId, qty=1, openCart=false, color=null, cus
   // cliente) — por isso productCardHTML nunca chama esta função direto para
   // eles (manda pra página do produto em vez de um "Comprar" rápido).
   Cart.add(productId, qty, finalColor, custom || null);
+  // Pixel da Meta: AddToCart (ponto unico usado por toda a loja — card
+  // de listagem, botao "Comprar" rapido e pagina do produto).
+  if (p && typeof fbq === 'function') {
+    fbq('track', 'AddToCart', {
+      content_ids: [p.id],
+      content_name: p.name,
+      content_type: 'product',
+      value: (p.promo || p.price) * qty,
+      currency: 'BRL'
+    });
+  }
   showToast('Adicionado ao carrinho', p ? p.name : 'Produto adicionado');
   if (openCart && window.openMinicart) window.openMinicart();
 }

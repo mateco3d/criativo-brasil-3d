@@ -75,6 +75,14 @@ async function ensureSchema() {
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pagbank_checkout_id TEXT`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pagbank_order_id TEXT`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pagbank_status TEXT`;
+  // _fbp / _fbc — cookies que o Pixel da Meta grava no navegador do
+  // cliente (identificam o navegador e, quando veio de um anuncio, o
+  // clique especifico). Capturados no checkout.html e enviados junto
+  // com o pedido, para que o evento Purchase da API de Conversoes
+  // (server-side, ver api/pagbank-webhook.js) tenha a mesma qualidade
+  // de correspondencia que o Pixel do navegador teria sozinho.
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS fbp TEXT`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS fbc TEXT`;
   await sql`
     CREATE TABLE IF NOT EXISTS order_items (
       id SERIAL PRIMARY KEY,
